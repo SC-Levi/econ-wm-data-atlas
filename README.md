@@ -1,18 +1,18 @@
 # Polymarket Data Atlas v1
 
 Data Atlas v1 是当前 Polymarket 数据审计的公开网页与离线入口。它使用已验收的 P1B 全量
-多尺度数据，展示：
+多尺度数据，直接回答五个问题：
 
-- 事件、market、可信成交和三个频率的数据规模；
-- event → market → bar 的研究单位与字段；
-- 每个 market 的轨迹点数分位数；
-- 7 个代表案例及其中 5 个正式 P1B 小时轨迹；
-- Track A 早期 pilot 与 31,949,309 条正式固定日历样本之间的关系；
+- 数据包含多少事件、时间点以及多大的时间跨度；
+- 每个事件包含哪些字段，单条轨迹是什么形式；
+- 不同轨迹的长度、采样频率和数据量如何分布；
+- 七个代表案例分别揭示什么数据结构与建模边界；
+- 原始 JSON / parquet 记录如何转成统一的 history / target 样本；
 - 当前能够和不能声称的研究边界。
 
 公开地址：
 
-https://sc-levi.github.io/econ-wm-data-atlas/
+https://economicworldmodel.github.io/
 
 网页入口设有前端协作口令，并在当前浏览器会话中保持解锁。该口令只限制普通浏览流程；
 由于站点仍由公开的 GitHub Pages 静态托管，网页源码和紧凑数据载荷仍可被直接访问。

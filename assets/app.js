@@ -15,6 +15,7 @@
   $("#hero-events").textContent = fmt(data.headline.events);
   $("#hero-markets").textContent = fmt(data.headline.traded_markets);
   $("#hero-span").textContent = data.headline.span_years.toFixed(2);
+  $("#scale-direct-answer").innerHTML = `共有 <b>${fmt(data.headline.events)} 个有效 events</b> 和 <b>${fmt(data.headline.traded_markets)} 个有成交 markets</b>。全局 UTC 时间点分别为 1 分钟 ${fmt(data.frequencies["1m"].distinct_utc_buckets)} 个、15 分钟 ${fmt(data.frequencies["15m"].distinct_utc_buckets)} 个、1 小时 ${fmt(data.frequencies["1h"].distinct_utc_buckets)} 个；对应的 market-time 观测行是 ${fmt(data.frequencies["1m"].rows)}、${fmt(data.frequencies["15m"].rows)} 和 ${fmt(data.frequencies["1h"].rows)}。覆盖 ${date(data.frequencies["1m"].first_bucket_utc)} 至 ${date(data.frequencies["1m"].last_bucket_utc)}，共 ${fmt(data.headline.span_days, 2)} 天（${data.headline.span_years.toFixed(2)} 年）。`;
 
   $("#status-list").innerHTML = data.status.map((item) => `
     <div class="status-item">
@@ -50,6 +51,9 @@
   renderFields("event", "#event-fields", "#event-field-count");
   renderFields("market", "#market-fields", "#market-field-count");
   renderFields("observed_bar", "#bar-fields", "#bar-field-count");
+  $("#direct-event-fields").textContent = fmt(data.schemas.event.length);
+  $("#direct-market-fields").textContent = fmt(data.schemas.market.length);
+  $("#direct-bar-fields").textContent = fmt(data.schemas.observed_bar.length);
 
   const quantileLabels = [["p25", "P25"], ["p50", "P50"], ["p75", "P75"], ["p90", "P90"], ["p95", "P95"], ["p99", "P99"], ["max", "MAX"]];
   const renderQuantiles = (frequency) => {
@@ -66,6 +70,8 @@
     $("#frequency-detail").innerHTML = `<span>UTC buckets <b>${fmt(row.distinct_utc_buckets)}</b></span><span>rows <b>${fmt(row.rows)}</b></span><span>disk <b>${bytes(row.bytes)}</b></span><span>role <b>${escape(row.role)}</b></span>`;
   };
   renderQuantiles("1h");
+  const hourlyPoints = data.frequencies["1h"].points_per_market;
+  $("#distribution-direct-answer").innerHTML = `轨迹长度呈明显长尾：1 小时 observed 轨迹的中位数只有 <b>${fmt(hourlyPoints.p50)} 个点</b>，P90 为 ${fmt(hourlyPoints.p90)}、P99 为 ${fmt(hourlyPoints.p99)}，最长达到 ${fmt(hourlyPoints.max)}；而 1 分钟层共有 ${fmt(data.frequencies["1m"].rows)} 条 market-time 观测。三种频率服务不同任务，正式实验以 1 小时为主，同时保留 15 分钟响应诊断和 1 分钟基础层。`;
   $$(".frequency-tabs button").forEach((button) => button.addEventListener("click", () => {
     $$(".frequency-tabs button").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
@@ -78,6 +84,51 @@
     const value = eventMarket[key];
     return `<div class="quantile-row"><span>${label}</span><div class="bar-track"><i style="width:${(Math.log1p(value) / eventMaxLog * 100).toFixed(2)}%"></i></div><b>${fmt(value)}</b></div>`;
   }).join("");
+
+  const caseNotes = {
+    "long-trajectory": {
+      context: "2024 美国总统选举父事件包含 17 个候选人 markets；这里展示 Donald Trump 获胜命题。",
+      reading: "从 2024 年 1 月持续到选举结果确认，小时价格由约 0.42 走向 0.998，选举日前成交显著变密。",
+      value: "适合检验长历史预测、高流动性状态变化和多尺度轨迹表示。",
+      warning: "同一父事件下候选人概率具有机械互斥约束，不能把 sibling 联动直接解释成跨事件信息传导。",
+    },
+    "multi-market-event": {
+      context: "一场 Dota 2 BO5 父事件包含 137 个 markets，覆盖系列赛、单局胜负及其他条件命题；这里仅展示 Game 2 胜者。",
+      reading: "该 market 只有 7 个小时 observed 点，价格从 0.59 快速走到 0.999，是短生命周期高信息密度轨迹。",
+      value: "说明 event_id 适合组织命题集合，但预测轨迹仍必须落在具体 market 上。",
+      warning: "系列赛胜者、单局胜者和统计命题语义不同，未经关系规则不能平均成一条“事件概率”。",
+    },
+    "deadline-family": {
+      context: "“停火是否在某日前延长”父事件含 4 个相邻截止日期命题，文本高度相似但结算条件不同。",
+      reading: "246 个小时 observed 点、44,413 笔可信成交；所选命题从 0.38 波动后走向 0.001。",
+      value: "适合检验短期响应、deadline 邻近关系和 family-aware 时间外切分。",
+      warning: "相邻日期改写若跨 train/test，会造成近重复命题泄漏；catalog deadline 也不能替代真实成交边界。",
+    },
+    "non-binary-label": {
+      context: "Seattle vs. New England 父事件含 95 个 markets；该命题的 answer1 是 Seahawks，answer2 是 Patriots。",
+      reading: "340 个小时 observed 点、61,548 笔成交，answer1 概率由约 0.67 走向 0.999。",
+      value: "展示统一价格方向后，体育、政治和宏观命题可以共享轨迹接口。",
+      warning: "0.67 表示 Seahawks 概率 67%，不是抽象的 Yes=67%；样本必须携带 answer 文本。",
+    },
+    "invalid-catalog-date": {
+      context: "Israel × Hezbollah 停火命题的原始 catalog 日期存在矛盾，但 market/event 身份和可信成交仍可追踪。",
+      reading: "真实成交形成 106 个小时 observed 点、13,613 笔成交，价格由约 0.87 走向 0.999。",
+      value: "展示元数据异常不必整条删除：可保留异常标记，并由可信成交界定观察窗口。",
+      warning: "不能用错误的 created/end date 生成历史长度、目标 horizon 或时间 split。",
+    },
+    "identity-quarantine": {
+      context: "Super Bowl 55 题目和 outcomes 都可读，但 event_id 缺失，无法回溯到可靠父事件。",
+      reading: "当前可信数据中没有可接受成交和 observed bars，因此不存在可用于训练的概率轨迹。",
+      value: "它是身份治理的负例：语义可理解与数据可训练是两个不同条件。",
+      warning: "不得仅凭文本相似度猜测 event_id 后混入严格 event-level 或 cross-event 训练。",
+    },
+    "catalog-only": {
+      context: "2020 Pennsylvania 选举命题存在于 catalog，但本项目可信成交覆盖中没有对应轨迹。",
+      reading: "1m、15m、1h observed 点均为 0；catalog 生命周期不是实际可观测概率序列。",
+      value: "它明确区分“目录规模”与“可训练市场数量”，避免夸大数据覆盖。",
+      warning: "没有成交状态、mask 和目标值时，不能根据 catalog 日期虚构日历轨迹。",
+    },
+  };
 
   const sparkline = (points) => {
     if (!points.length) return `<div class="no-trajectory">无可信 P1B 小时轨迹</div>`;
@@ -98,13 +149,26 @@
   $("#case-grid").innerHTML = data.cases.map((item, index) => {
     const filter = item.has_trusted_trades ? "trajectory" : "governance";
     const eventMarkets = item.event ? `${fmt(item.event.market_count)} markets in event` : "no verified event";
+    const notes = caseNotes[item.slug];
+    const points = item.trajectory_1h;
+    const firstPrice = points.length ? Number(points[0].price).toFixed(3) : "—";
+    const lastPrice = points.length ? Number(points.at(-1).price).toFixed(3) : "—";
+    const period = item.first_trade_hour_utc ? `${date(item.first_trade_hour_utc)} → ${date(item.last_trade_hour_utc)}` : "无可信成交区间";
     return `<article class="case-card" data-kind="${filter}">
       <div class="case-top"><span>CASE ${String(index + 1).padStart(2, "0")} · MARKET ${escape(item.market_id)}</span><b>${escape(item.type)}</b></div>
+      <p class="case-event">${escape(item.event_title || "未验证父事件")}</p>
       <h3>${escape(item.question_text)}</h3>
       <p class="case-question">${escape(item.answer1)} ↔ ${escape(item.answer2)} · ${escape(eventMarkets)}</p>
       <p class="case-summary">${escape(item.summary)}</p>
-      <div class="case-stats"><span><b>${fmt(item.observed_points["1m"])}</b>1m points</span><span><b>${fmt(item.observed_points["15m"])}</b>15m points</span><span><b>${fmt(item.observed_points["1h"])}</b>1h points</span></div>
+      <div class="case-stats"><span><b>${fmt(item.trusted_trade_count)}</b>trusted trades</span><span><b>${fmt(item.observed_points["1m"])}</b>1m points</span><span><b>${fmt(item.observed_points["15m"])}</b>15m points</span><span><b>${fmt(item.observed_points["1h"])}</b>1h points</span></div>
       ${sparkline(item.trajectory_1h)}
+      <div class="case-timeline"><span>${escape(period)}</span><span>p_answer1 <b>${firstPrice} → ${lastPrice}</b></span></div>
+      <div class="case-detail-grid">
+        <section><span>EVENT CONTEXT</span><p>${escape(notes.context)}</p></section>
+        <section><span>TRAJECTORY READING</span><p>${escape(notes.reading)}</p></section>
+        <section><span>WHY REPRESENTATIVE</span><p>${escape(notes.value)}</p></section>
+        <section><span>MODELING WARNING</span><p>${escape(notes.warning)}</p></section>
+      </div>
       <div class="case-callout">它回答：${escape(item.question)}</div>
     </article>`;
   }).join("");
@@ -114,13 +178,11 @@
     $$(".case-card").forEach((card) => card.classList.toggle("hidden", button.dataset.filter !== "all" && card.dataset.kind !== button.dataset.filter));
   }));
 
-  const scope = data.pilot.scope;
-  const test = data.pilot.persistence_test;
   const pilotMetrics = [
-    [fmt(scope.track_a_window_count), "pilot windows"],
-    [fmt(scope.track_a_eligible_market_count), "eligible markets"],
-    [test.mae.toFixed(4), "test persistence MAE"],
-    [test.rmse.toFixed(4), "test persistence RMSE"],
+    [fmt(31949309), "formal calendar samples"],
+    [fmt(26330043), "cold-family samples"],
+    [fmt(192), "protocol × shard files"],
+    [fmt(3), "A-H / A-D / A-S protocols"],
   ];
   $("#pilot-metrics").innerHTML = pilotMetrics.map(([value, label]) => `<article class="pilot-metric"><b>${value}</b><span>${label}</span></article>`).join("");
 

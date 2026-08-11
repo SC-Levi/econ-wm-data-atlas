@@ -31,21 +31,21 @@
     <nav class="nav shell" aria-label="页面导航">
       <a class="brand" href="#top">ECON<span>WM</span> / DATA ATLAS <b>V1</b></a>
       <div class="nav-links">
-        <a href="#scale">规模</a>
-        <a href="#schema">结构</a>
-        <a href="#distribution">分布</a>
-        <a href="#cases">案例</a>
-        <a href="#samples">样本</a>
+        <a href="#scale">Q1 规模</a>
+        <a href="#schema">Q2 结构</a>
+        <a href="#distribution">Q3 分布</a>
+        <a href="#cases">Q4 案例</a>
+        <a href="#samples">Q5 样本</a>
       </div>
     </nav>
 
     <div class="hero-grid shell">
       <div class="hero-main">
         <p class="eyebrow">POLYMARKET · EVENT × MARKET × TIME</p>
-        <h1>数据已经有了。<br><em>现在要看清它。</em></h1>
-        <p class="hero-copy">基于已验收的 P1B 全量多尺度数据，回答五个训练前问题：规模、字段、轨迹分布、代表案例，以及“历史信息—预测目标”样本目前走到了哪里。</p>
+        <h1>五个问题，<br><em>直接回答。</em></h1>
+        <p class="hero-copy">从规模、结构、分布和具体案例出发，说明 Polymarket 原始记录如何变成可用于预测实验的统一“历史信息—预测目标”样本。</p>
         <div class="hero-actions">
-          <a class="button primary" href="#scale">查看审计结果</a>
+          <a class="button primary" href="#questions">查看五个答案</a>
           <a class="button secondary" href="data/atlas.json">机器可读数据</a>
           <a class="text-link" href="#boundary">查看当前研究边界 ↓</a>
         </div>
@@ -68,10 +68,29 @@
   </header>
 
   <main>
+    <section class="question-index shell" id="questions" aria-label="本页回答的五个问题">
+      <div class="question-index-head">
+        <p class="eyebrow">READING GUIDE</p>
+        <h2>这份 Data Atlas 回答什么？</h2>
+        <p>每个问题先给可直接引用的结论，再展开数据证据、字段和案例。</p>
+      </div>
+      <div class="question-links">
+        <a href="#scale"><span>Q1</span><b>规模与跨度</b><small>事件、时间点和覆盖范围</small></a>
+        <a href="#schema"><span>Q2</span><b>字段与轨迹</b><small>event、market 与 bar 的关系</small></a>
+        <a href="#distribution"><span>Q3</span><b>分布与频率</b><small>长度、采样和数据量长尾</small></a>
+        <a href="#cases"><span>Q4</span><b>代表案例</b><small>具体轨迹与治理边界</small></a>
+        <a href="#samples"><span>Q5</span><b>训练样本</b><small>raw records → history / target</small></a>
+      </div>
+    </section>
+
     <section class="section shell" id="scale">
       <div class="section-heading">
-        <div><p class="eyebrow">01 / SCALE</p><h2>有多少数据？</h2></div>
-        <p>全局 UTC bucket 与 market-time 观测行是两个不同概念。同一时刻可以有大量 markets 同时活跃。</p>
+        <div><p class="eyebrow">Q1 / SCALE & TIME</p><h2>数据包含多少事件、多少时间点以及多大的时间跨度？</h2></div>
+        <p>“时间点”同时报告全局 UTC bucket 和 market-time 观测行：同一时刻可以有大量 markets 同时活跃。</p>
+      </div>
+      <div class="direct-answer">
+        <span>DIRECT ANSWER</span>
+        <p id="scale-direct-answer">正在读取已验收数据……</p>
       </div>
       <div id="headline-metrics" class="metric-grid"></div>
       <div class="table-wrap frequency-wrap">
@@ -83,8 +102,13 @@
     <section class="section section-dark" id="schema">
       <div class="shell">
         <div class="section-heading light">
-          <div><p class="eyebrow">02 / UNIT & SCHEMA</p><h2>一条轨迹到底是什么？</h2></div>
-          <p>Track A 的基本单位是 market，不是父 event。父 event 可以容纳多个语义不同或相互约束的 markets。</p>
+          <div><p class="eyebrow">Q2 / UNIT & SCHEMA</p><h2>每个事件包含哪些字段，单条轨迹是什么形式？</h2></div>
+          <p>event 是现实事件容器，market 是可交易命题，单条轨迹是一个 market 按 UTC 时间排序后的状态序列。</p>
+        </div>
+
+        <div class="direct-answer inverse">
+          <span>DIRECT ANSWER</span>
+          <p>事件目录有 <b id="direct-event-fields">—</b> 个字段，market 目录有 <b id="direct-market-fields">—</b> 个字段，每个 observed bar 有 <b id="direct-bar-fields">—</b> 个字段。建模单位是 <code>market_id × bucket_start_utc</code>，不是将父事件下的 markets 直接平均。</p>
         </div>
 
         <div class="unit-flow" aria-label="数据层级">
@@ -101,14 +125,36 @@
           <article class="schema-card wide"><div class="schema-title"><span>OBSERVED BAR</span><b id="bar-field-count">—</b></div><div id="bar-fields" class="field-cloud"></div></article>
         </div>
 
+        <div class="field-meaning-grid">
+          <article><span>EVENT FIELDS</span><h3>事件身份与容器规模</h3><p><code>event_id</code>、标题、market 数、首末成交、事件跨度、成交数与成交额，回答“这个现实事件容纳了什么”。</p></article>
+          <article><span>MARKET FIELDS</span><h3>命题、方向与可训练性</h3><p><code>market_id</code>、问题文本、<code>answer1/answer2</code>、父事件、生命周期、身份状态和轨迹摘要，回答“价格究竟对应哪个命题”。</p></article>
+          <article><span>BAR FIELDS</span><h3>一个时间点的市场状态</h3><p><code>bucket_start_utc</code>、OHLC、成交量、成交数、signed flow 与首末成交顺序，组成按时间排序的概率轨迹。</p></article>
+        </div>
+
+        <div class="trajectory-contract">
+          <div><span>SINGLE TRAJECTORY</span><h3>一条轨迹 = 同一 market 的有序 bar 序列</h3><p>例如 <code>[(t₀, p_close, volume, count), …, (tₙ, …)]</code>。价格统一为 <code>p_answer1</code>；无成交日历位置通过规则状态、mask 与 staleness 表达，而不是把下一个成交点当作相邻时刻。</p></div>
+          <pre>{
+  "market_id": "253591",
+  "bucket_start_utc": "2024-11-05T13:00:00Z",
+  "p_answer1": 0.609,
+  "trade_count": 4779,
+  "usd_volume": 1542857.36
+}</pre>
+        </div>
+
         <div class="orientation-note"><span>IMPORTANT</span><p>价格始终表示 <code>answer1</code> 方向。体育市场中的 0.7 可能是 “Seahawks 概率 70%”，不能无条件改名为 Yes 概率。</p></div>
       </div>
     </section>
 
     <section class="section shell" id="distribution">
       <div class="section-heading">
-        <div><p class="eyebrow">03 / DISTRIBUTION</p><h2>轨迹并不等长。</h2></div>
+        <div><p class="eyebrow">Q3 / DISTRIBUTION</p><h2>不同事件的轨迹长度、采样频率和数据量如何分布？</h2></div>
         <p>长尾决定了样本协议：不能为所有 markets 强行使用同一个长历史窗口，也不能只汇报最活跃子集。</p>
+      </div>
+
+      <div class="direct-answer">
+        <span>DIRECT ANSWER</span>
+        <p id="distribution-direct-answer">正在计算轨迹长度分位数……</p>
       </div>
 
       <div class="frequency-tabs" role="tablist" aria-label="选择频率">
@@ -134,8 +180,12 @@
     <section class="section section-ink" id="cases">
       <div class="shell">
         <div class="section-heading light">
-          <div><p class="eyebrow">04 / CASE GALLERY</p><h2>具体案例比均值更重要。</h2></div>
-          <p>这些案例覆盖长轨迹、多 market、短 deadline、命题方向、日期异常和身份隔离。</p>
+          <div><p class="eyebrow">Q4 / CASE GALLERY</p><h2>数据中有哪些具有代表性的具体案例？</h2></div>
+          <p>七个案例覆盖政治长轨迹、电竞多 market、短 deadline、非 Yes/No 方向、日期异常、身份隔离与无成交 catalog。</p>
+        </div>
+        <div class="direct-answer inverse">
+          <span>DIRECT ANSWER</span>
+          <p>案例不是“好看的曲线”集合，而是七类会改变建模选择的数据结构：长轨迹、父事件内机械约束、相邻截止日期、命题方向、元数据异常、身份缺失和无成交记录。</p>
         </div>
         <div class="case-toolbar" role="group" aria-label="案例筛选">
           <button class="active" data-filter="all" type="button">全部案例</button>
@@ -149,20 +199,50 @@
     <section class="section section-tint" id="samples">
       <div class="shell">
         <div class="section-heading">
-          <div><p class="eyebrow">05 / TRAINING SHAPE</p><h2>正式 Track A 已经物化。</h2></div>
-          <p>早期 pilot 用于说明样本形状；当前已从全量 P1B 构造 A-H、A-D、A-S 三类固定日历样本，并完成首轮确定性简单基线。</p>
+          <div><p class="eyebrow">Q5 / TRAINING SHAPE</p><h2>如何将原始 JSON 整理成统一的“历史信息—预测目标”训练样本？</h2></div>
+          <p>核心不是截取若干成交点，而是先统一身份、价格方向和日历状态，再以 <code>as_of_time</code> 切分历史输入与未来目标。</p>
+        </div>
+
+        <div class="direct-answer">
+          <span>DIRECT ANSWER</span>
+          <p>原始 JSON / parquet 记录经过六步转化：身份与方向统一 → 可信成交筛选 → 多尺度聚合 → 规则日历状态 → history/target 窗口 → 时间与事件族切分。最终得到 31,949,309 条固定日历样本，其中 26,330,043 条属于 cold-family 主视图。</p>
+        </div>
+
+        <div class="pipeline" aria-label="原始记录到训练样本的处理流程">
+          <article><span>01</span><b>RAW RECORDS</b><h3>读取原始 JSON / parquet</h3><p>market、event、trade 身份，时间、outcome、price、size。</p></article>
+          <i>→</i>
+          <article><span>02</span><b>NORMALIZE</b><h3>统一身份与价格方向</h3><p>冻结 <code>market_id/event_id</code>，所有价格转为 <code>p_answer1</code>。</p></article>
+          <i>→</i>
+          <article><span>03</span><b>TRUSTED TRADES</b><h3>去重并隔离异常</h3><p>核对成交视图、方向、重复表示和事件身份。</p></article>
+          <i>→</i>
+          <article><span>04</span><b>MARKET STATES</b><h3>聚合多尺度状态</h3><p>生成 1m / 15m / 1h observed bars 与规则小时状态。</p></article>
+          <i>→</i>
+          <article><span>05</span><b>WINDOW</b><h3>按日历切 history / target</h3><p>保留 mask、has_trade、staleness；不压缩长缺口。</p></article>
+          <i>→</i>
+          <article><span>06</span><b>SPLIT</b><h3>冻结训练边界</h3><p>完整 target path 留在同一时间 split，并执行 family 隔离。</p></article>
+        </div>
+
+        <div class="protocol-table table-wrap">
+          <table>
+            <thead><tr><th>协议</th><th>历史输入</th><th>预测目标</th><th>样本量</th><th>研究用途</th></tr></thead>
+            <tbody>
+              <tr><td><b>A-H</b></td><td>过去 24 个日历小时</td><td>未来 1 / 6 / 24 小时</td><td>26,900,567</td><td>Track A 与 P3 主协议</td></tr>
+              <tr><td><b>A-D</b></td><td>过去 10 个 UTC 日</td><td>未来 7 日路径</td><td>2,680,165</td><td>EventConnector 可比实验</td></tr>
+              <tr><td><b>A-S</b></td><td>过去 16 个 UTC 日</td><td>下一日概率与变化</td><td>2,368,577</td><td>SWM history-only 实验</td></tr>
+            </tbody>
+          </table>
         </div>
 
         <div id="pilot-metrics" class="pilot-metrics"></div>
         <div class="sample-grid">
           <article class="sample-card">
-            <div class="sample-label pilot">EXISTING PILOT</div>
-            <h3>10 observed days → 7 future days</h3>
+            <div class="sample-label pilot">EARLY PILOT · FOR COMPARISON</div>
+            <h3>旧版：observed points → future points</h3>
             <pre id="pilot-preview"></pre>
           </article>
           <article class="sample-card">
             <div class="sample-label formal">FORMAL TRACK A CONTRACT</div>
-            <h3>全量 P1B 规则小时样本</h3>
+            <h3>正式版：calendar history → fixed horizons</h3>
             <pre id="formal-preview"></pre>
           </article>
         </div>
