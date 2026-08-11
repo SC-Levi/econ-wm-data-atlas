@@ -199,28 +199,35 @@
   }));
 
   const methodLabels = {
-    closed_llm: "Closed LLM",
+    trajectory_only: "匿名轨迹",
+    sanitized_semantics: "匿名语义",
+    full_semantics: "完整语义",
     persistence: "Persistence",
     recent_linear_drift: "Recent drift",
   };
   const hiddenPointCount = llmDemo.cases.reduce((total, item) => total + item.holdout_points, 0);
-  const llmAggregate = llmDemo.aggregate.closed_llm;
+  const trajectoryAggregate = llmDemo.aggregate.trajectory_only;
+  const sanitizedAggregate = llmDemo.aggregate.sanitized_semantics;
+  const fullAggregate = llmDemo.aggregate.full_semantics;
   const persistenceAggregate = llmDemo.aggregate.persistence;
-  const driftAggregate = llmDemo.aggregate.recent_linear_drift;
-  $("#llm-direct-answer").innerHTML = `在 ${fmt(llmDemo.cases.length)} 条展示轨迹、${fmt(hiddenPointCount)} 个隐藏点上，<b>${escape(llmDemo.model)}</b> 的 MAE 为 <b>${llmAggregate.mae.toFixed(4)}</b>，与 persistence 的 ${persistenceAggregate.mae.toFixed(4)} 基本持平；RMSE 为 ${llmAggregate.rmse.toFixed(4)}，略低于 persistence 的 ${persistenceAggregate.rmse.toFixed(4)}，但高于 recent drift 的 ${driftAggregate.rmse.toFixed(4)}。这次演示没有显示 closed LLM 对匿名概率轨迹具有明确优势。`;
-  $("#llm-tool-calls").textContent = fmt(llmDemo.model_tool_calls);
+  $("#llm-direct-answer").innerHTML = `在 ${fmt(llmDemo.cases.length)} 条展示轨迹、${fmt(hiddenPointCount)} 个隐藏点上，匿名轨迹、匿名语义和完整语义的 MAE 分别为 <b>${trajectoryAggregate.mae.toFixed(4)}</b>、<b>${sanitizedAggregate.mae.toFixed(4)}</b> 和 <b>${fullAggregate.mae.toFixed(4)}</b>，persistence 为 ${persistenceAggregate.mae.toFixed(4)}。匿名轨迹的 MAE 最低；完整语义的 RMSE 低于另外两组和 persistence，但仍不及 recent drift。差异很小，本次演示没有显示语义带来稳定预测增量。`;
+  $("#llm-tool-calls").textContent = fmt(Object.values(llmDemo.model_tool_calls).reduce((total, value) => total + value, 0));
   const llmMetricCards = [
-    ["CLOSED LLM MAE", llmAggregate.mae.toFixed(4), llmDemo.model],
+    ["TRAJECTORY-ONLY MAE", trajectoryAggregate.mae.toFixed(4), `RMSE ${trajectoryAggregate.rmse.toFixed(4)}`],
+    ["SANITIZED SEMANTICS MAE", sanitizedAggregate.mae.toFixed(4), `RMSE ${sanitizedAggregate.rmse.toFixed(4)}`],
+    ["FULL SEMANTICS MAE", fullAggregate.mae.toFixed(4), `RMSE ${fullAggregate.rmse.toFixed(4)} · contamination-sensitive`],
     ["PERSISTENCE MAE", persistenceAggregate.mae.toFixed(4), "同一样本预测地板"],
-    ["CLOSED LLM RMSE", llmAggregate.rmse.toFixed(4), `persistence ${persistenceAggregate.rmse.toFixed(4)}`],
-    ["HIDDEN POINTS", fmt(hiddenPointCount), `${fmt(llmDemo.cases.length)} cases · single pass`],
   ];
   $("#llm-metrics").innerHTML = llmMetricCards.map(([label, value, detail]) => `<article class="llm-metric"><span>${escape(label)}</span><b>${escape(value)}</b><small>${escape(detail)}</small></article>`).join("");
 
-  const winner = (metrics) => Object.entries(metrics).sort((left, right) => left[1].mae - right[1].mae)[0][0];
-  $("#llm-results-table").innerHTML = `<thead><tr><th>展示案例</th><th>隐藏点</th><th>Closed LLM MAE</th><th>Persistence MAE</th><th>Recent drift MAE</th><th>最低 MAE</th></tr></thead><tbody>${llmDemo.cases.map((item) => {
-    const best = winner(item.metrics);
-    return `<tr><td><b>${escape(item.case_slug)}</b></td><td>${fmt(item.holdout_points)}</td><td class="${best === "closed_llm" ? "best" : ""}">${item.metrics.closed_llm.mae.toFixed(4)}</td><td class="${best === "persistence" ? "best" : ""}">${item.metrics.persistence.mae.toFixed(4)}</td><td class="${best === "recent_linear_drift" ? "best" : ""}">${item.metrics.recent_linear_drift.mae.toFixed(4)}</td><td>${escape(methodLabels[best])}</td></tr>`;
+  const comparedMethods = ["trajectory_only", "sanitized_semantics", "full_semantics", "persistence"];
+  const winners = (metrics) => {
+    const bestMae = Math.min(...comparedMethods.map((method) => metrics[method].mae));
+    return comparedMethods.filter((method) => Math.abs(metrics[method].mae - bestMae) < 1e-12);
+  };
+  $("#llm-results-table").innerHTML = `<thead><tr><th>展示案例</th><th>隐藏点</th><th>匿名轨迹 MAE</th><th>＋匿名语义</th><th>＋完整语义*</th><th>Persistence</th><th>最低 MAE</th></tr></thead><tbody>${llmDemo.cases.map((item) => {
+    const best = winners(item.metrics);
+    return `<tr><td><b>${escape(item.case_slug)}</b></td><td>${fmt(item.holdout_points)}</td><td class="${best.includes("trajectory_only") ? "best" : ""}">${item.metrics.trajectory_only.mae.toFixed(4)}</td><td class="${best.includes("sanitized_semantics") ? "best" : ""}">${item.metrics.sanitized_semantics.mae.toFixed(4)}</td><td class="${best.includes("full_semantics") ? "best" : ""}">${item.metrics.full_semantics.mae.toFixed(4)}</td><td class="${best.includes("persistence") ? "best" : ""}">${item.metrics.persistence.mae.toFixed(4)}</td><td>${best.map((method) => escape(methodLabels[method])).join(" / ")}</td></tr>`;
   }).join("")}</tbody>`;
 
   const forecastChart = (caseItem, result) => {
@@ -240,13 +247,15 @@
     const historyRows = history.map((point) => [point.time, point.price]);
     const anchor = history.at(-1);
     const actualRows = [[anchor.time, anchor.price], ...targetPoints.map((point) => [point.time, point.price])];
-    const modelRows = [[anchor.time, anchor.price], ...targetPoints.map((point, index) => [point.time, result.predictions.closed_llm[index]])];
+    const trajectoryRows = [[anchor.time, anchor.price], ...targetPoints.map((point, index) => [point.time, result.predictions.trajectory_only[index]])];
+    const sanitizedRows = [[anchor.time, anchor.price], ...targetPoints.map((point, index) => [point.time, result.predictions.sanitized_semantics[index]])];
+    const fullRows = [[anchor.time, anchor.price], ...targetPoints.map((point, index) => [point.time, result.predictions.full_semantics[index]])];
     const persistenceRows = [[anchor.time, anchor.price], ...targetPoints.map((point, index) => [point.time, result.predictions.persistence[index]])];
     const cutoffX = x(targetPoints[0].time);
     const yTicks = [1, .5, 0].map((value) => `<line class="grid" x1="${plot.left}" y1="${y(value)}" x2="${width - plot.right}" y2="${y(value)}"></line><text x="${plot.left - 8}" y="${y(value) + 3}" text-anchor="end">${value.toFixed(1)}</text>`).join("");
-    return `<svg class="forecast-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="可见历史、隐藏真实值、闭源 LLM 与 persistence 预测对比">
+    return `<svg class="forecast-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="可见历史、隐藏真实值、三种闭源 LLM 输入条件与 persistence 预测对比">
       ${yTicks}<line class="axis" x1="${plot.left}" y1="${plot.top}" x2="${plot.left}" y2="${plot.bottom}"></line><line class="axis" x1="${plot.left}" y1="${plot.bottom}" x2="${width - plot.right}" y2="${plot.bottom}"></line>
-      <polyline class="history" points="${polyline(historyRows)}"></polyline><polyline class="actual" points="${polyline(actualRows)}"></polyline><polyline class="model" points="${polyline(modelRows)}"></polyline><polyline class="persist" points="${polyline(persistenceRows)}"></polyline>
+      <polyline class="history" points="${polyline(historyRows)}"></polyline><polyline class="actual" points="${polyline(actualRows)}"></polyline><polyline class="trajectory" points="${polyline(trajectoryRows)}"></polyline><polyline class="sanitized" points="${polyline(sanitizedRows)}"></polyline><polyline class="full" points="${polyline(fullRows)}"></polyline><polyline class="persist" points="${polyline(persistenceRows)}"></polyline>
       <line class="cutoff" x1="${cutoffX}" y1="${plot.top}" x2="${cutoffX}" y2="${plot.bottom}"></line><text class="cutoff-label" x="${cutoffX + 5}" y="${plot.top + 9}">forecast origin</text>
       <text x="${plot.left}" y="${plot.bottom + 16}">${date(visible[0].time)}</text><text x="${width - plot.right}" y="${plot.bottom + 16}" text-anchor="end">${date(visible.at(-1).time)}</text><text x="${(plot.left + width - plot.right) / 2}" y="${height - 4}" text-anchor="middle">UTC time · p_answer1 ∈ [0,1]</text>
     </svg>`;
@@ -254,7 +263,8 @@
   const caseByMarket = new Map(data.cases.map((item) => [String(item.market_id), item]));
   $("#llm-case-grid").innerHTML = llmDemo.cases.map((result) => {
     const caseItem = caseByMarket.get(String(result.market_id));
-    return `<article class="llm-case-card"><div class="llm-case-top"><span>${escape(result.series_id)} · ${fmt(result.history_points)} history points</span><b>${fmt(result.holdout_points)} hidden</b></div><h3>${escape(caseItem.question_text)}</h3><p>模型输入中未出现该标题；此处仅在评分后恢复案例身份以便解释。</p>${forecastChart(caseItem, result)}<div class="llm-case-metrics"><span><b>${result.metrics.closed_llm.mae.toFixed(4)}</b>LLM MAE</span><span><b>${result.metrics.persistence.mae.toFixed(4)}</b>Persistence</span><span><b>${result.metrics.recent_linear_drift.mae.toFixed(4)}</b>Recent drift</span></div></article>`;
+    const deadlineNote = result.deadline_metadata_anomaly ? " · catalog deadline 异常" : ` · 距 deadline ${Number(result.deadline_hours_from_last_history).toFixed(1)}h`;
+    return `<article class="llm-case-card"><div class="llm-case-top"><span>${escape(result.series_id)} · ${fmt(result.history_points)} history points${escape(deadlineNote)}</span><b>${fmt(result.holdout_points)} hidden</b></div><h3>${escape(caseItem.question_text)}</h3><p>同一隐藏末段分别使用三种信息条件；该原始标题只进入 Full semantics arm，可能受预训练知识污染。</p>${forecastChart(caseItem, result)}<div class="llm-case-metrics"><span><b>${result.metrics.trajectory_only.mae.toFixed(4)}</b>匿名轨迹</span><span><b>${result.metrics.sanitized_semantics.mae.toFixed(4)}</b>＋匿名语义</span><span><b>${result.metrics.full_semantics.mae.toFixed(4)}</b>＋完整语义*</span><span><b>${result.metrics.persistence.mae.toFixed(4)}</b>Persistence</span></div></article>`;
   }).join("");
 
   const pilotMetrics = [

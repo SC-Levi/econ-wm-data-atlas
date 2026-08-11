@@ -1,29 +1,46 @@
 window.CASE_LLM_BASELINE = {
-  "version": "polymarket-case-closed-llm-baseline-v0",
-  "generated_at_utc": "2026-08-11T10:28:52.140854+00:00",
+  "version": "polymarket-case-closed-llm-semantics-ablation-v1",
+  "generated_at_utc": "2026-08-11T10:54:06.893740+00:00",
   "status": "demo_only_not_track_a",
   "model": "gpt-5.6-sol",
   "model_reasoning_effort": "low",
-  "model_tool_calls": 0,
+  "model_tool_calls": {
+    "trajectory_only": 0,
+    "sanitized_semantics": 0,
+    "full_semantics": 0
+  },
+  "contamination_warning": "full_semantics uses original public event text and absolute dates; its result may be affected by information learned during model pretraining",
   "protocol": {
     "source": "Data Atlas downsampled 1h case trajectories",
     "cases": 5,
     "holdout": "last ceil(10%) points, minimum 2, maximum 12",
-    "information_given_to_model": "anonymous relative-hour and transformed probability history only",
-    "withheld": [
-      "event and market identity",
-      "question and outcomes",
-      "absolute timestamps",
-      "future values",
-      "repository and web access"
+    "arms": {
+      "trajectory_only": "anonymous relative-hour and transformed probability history only",
+      "sanitized_semantics": "trajectory plus anonymized domain, contract structure, outcome orientation, and catalog-deadline distance",
+      "full_semantics": "trajectory plus original question, parent event title, answer labels, absolute forecast time, and catalog deadline; contamination-sensitive"
+    },
+    "shared_controls": [
+      "same five series and 49 hidden displayed points",
+      "same history and forecast timestamps",
+      "same model and reasoning effort",
+      "independent ephemeral read-only session for every arm",
+      "no browsing, search, repository access, or tool calls"
     ],
     "orientation_blinding": "alternating series use p -> 1-p; decoded before scoring",
     "evaluation": "micro-average over every hidden displayed point"
   },
   "aggregate": {
-    "closed_llm": {
-      "mae": 0.04455102040816329,
-      "rmse": 0.10806035728391118
+    "trajectory_only": {
+      "mae": 0.04348979591836737,
+      "rmse": 0.10918912631815704
+    },
+    "sanitized_semantics": {
+      "mae": 0.04389795918367349,
+      "rmse": 0.10878897378101576
+    },
+    "full_semantics": {
+      "mae": 0.044408163265306146,
+      "rmse": 0.10818502669038818
     },
     "persistence": {
       "mae": 0.044061224489795915,
@@ -70,20 +87,50 @@ window.CASE_LLM_BASELINE = {
         0.609,
         0.998
       ],
+      "deadline_hours_from_last_history": 246.0,
+      "deadline_metadata_anomaly": false,
       "predictions": {
-        "closed_llm": [
+        "trajectory_only": [
+          0.636,
+          0.634,
+          0.632,
+          0.63,
+          0.628,
+          0.626,
+          0.624,
+          0.622,
+          0.621,
+          0.62,
+          0.619,
+          0.618
+        ],
+        "sanitized_semantics": [
+          0.635,
+          0.634,
+          0.633,
+          0.633,
+          0.632,
+          0.632,
+          0.631,
+          0.63,
+          0.63,
+          0.629,
+          0.629,
+          0.628
+        ],
+        "full_semantics": [
+          0.638,
+          0.639,
           0.64,
           0.641,
           0.642,
+          0.642,
           0.643,
           0.644,
+          0.644,
           0.645,
-          0.646,
-          0.647,
-          0.648,
-          0.649,
-          0.65,
-          0.651
+          0.645,
+          0.646
         ],
         "persistence": [
           0.639,
@@ -115,9 +162,17 @@ window.CASE_LLM_BASELINE = {
         ]
       },
       "metrics": {
-        "closed_llm": {
-          "mae": 0.062166666666666696,
-          "rmse": 0.11007800264660815
+        "trajectory_only": {
+          "mae": 0.057833333333333355,
+          "rmse": 0.11453602053502646
+        },
+        "sanitized_semantics": {
+          "mae": 0.059500000000000025,
+          "rmse": 0.11297049762364214
+        },
+        "full_semantics": {
+          "mae": 0.06158333333333336,
+          "rmse": 0.110576896321067
         },
         "persistence": {
           "mae": 0.060166666666666695,
@@ -128,7 +183,11 @@ window.CASE_LLM_BASELINE = {
           "rmse": 0.11094342549287614
         }
       },
-      "llm_rationale": "Damped local-trend extrapolation from the recent elevated regime, with smoothing to reduce short-term oscillations and all forecasts constrained to the probability interval."
+      "llm_rationales": {
+        "trajectory_only": "The recent trajectory is volatile but centered in the low-to-mid 0.60s after a sustained rise from roughly 0.48. Forecasts begin near the latest local level and gradually regress toward the recent regional mean.",
+        "sanitized_semantics": "The election probability recently rose into the low-to-mid 0.60s but remains volatile, with repeated reversals after spikes. The forecast therefore starts near the latest local level and gently mean-reverts over the roughly ten-day horizon rather than extrapolating the sharpest moves.",
+        "full_semantics": "The Yes probability is volatile but recently centered near 0.64 after a sustained rise from the low-0.50s. With the election deadline still about ten days away, the forecast applies only a mild upward drift rather than extrapolating recent short-lived spikes."
+      }
     },
     {
       "series_id": "series_02",
@@ -145,8 +204,18 @@ window.CASE_LLM_BASELINE = {
         0.999,
         0.999
       ],
+      "deadline_hours_from_last_history": 3.25,
+      "deadline_metadata_anomaly": false,
       "predictions": {
-        "closed_llm": [
+        "trajectory_only": [
+          0.999,
+          0.999
+        ],
+        "sanitized_semantics": [
+          0.999,
+          0.999
+        ],
+        "full_semantics": [
           0.999,
           0.999
         ],
@@ -160,7 +229,15 @@ window.CASE_LLM_BASELINE = {
         ]
       },
       "metrics": {
-        "closed_llm": {
+        "trajectory_only": {
+          "mae": 0.0,
+          "rmse": 0.0
+        },
+        "sanitized_semantics": {
+          "mae": 0.0,
+          "rmse": 0.0
+        },
+        "full_semantics": {
           "mae": 0.0,
           "rmse": 0.0
         },
@@ -173,7 +250,11 @@ window.CASE_LLM_BASELINE = {
           "rmse": 0.0010000000000000009
         }
       },
-      "llm_rationale": "Persistence forecast at the stable lower-bound plateau observed in the latest values."
+      "llm_rationales": {
+        "trajectory_only": "The series abruptly fell to the lower probability bound and remained at 0.001 for two observations, so the near-term forecast stays at that established floor.",
+        "sanitized_semantics": "The probability for outcome B collapsed from 0.33 to the effective lower bound and stayed at 0.001 for two observations. With the component game's deadline close, the floor-level trajectory is treated as a near-settled outcome.",
+        "full_semantics": "Team Yandex's probability collapsed from 0.41 to the 0.001 floor and remained there, strongly indicating an effectively resolved or nearly resolved game outcome. The short horizon supports persistence at the lower bound."
+      }
     },
     {
       "series_id": "series_03",
@@ -210,8 +291,38 @@ window.CASE_LLM_BASELINE = {
         0.0020000000000000018,
         0.001
       ],
+      "deadline_hours_from_last_history": -228.0,
+      "deadline_metadata_anomaly": true,
       "predictions": {
-        "closed_llm": [
+        "trajectory_only": [
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002
+        ],
+        "sanitized_semantics": [
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002,
+          0.002
+        ],
+        "full_semantics": [
           0.002,
           0.002,
           0.002,
@@ -255,7 +366,15 @@ window.CASE_LLM_BASELINE = {
         ]
       },
       "metrics": {
-        "closed_llm": {
+        "trajectory_only": {
+          "mae": 0.0009166666666666677,
+          "rmse": 0.001443375672974065
+        },
+        "sanitized_semantics": {
+          "mae": 0.0009166666666666677,
+          "rmse": 0.001443375672974065
+        },
+        "full_semantics": {
           "mae": 0.0009166666666666677,
           "rmse": 0.001443375672974065
         },
@@ -268,7 +387,11 @@ window.CASE_LLM_BASELINE = {
           "rmse": 0.002089752852629705
         }
       },
-      "llm_rationale": "Robust local-level forecast using the recent near-zero plateau while ignoring the isolated historical spike."
+      "llm_rationales": {
+        "trajectory_only": "The trajectory has remained near 0.001–0.004 for a long interval. The isolated 0.991 observation is treated as a transient anomaly because it immediately reverted to the prior near-zero regime.",
+        "sanitized_semantics": "The series has remained near 0.001–0.004 for more than 160 hours. The isolated 0.991 observation immediately reversed and is treated as an anomalous tick; the inconsistent catalog deadline is therefore not used to force a resolution shift.",
+        "full_semantics": "The Yes probability has remained near 0.001–0.004 for more than 160 hours, apart from one isolated anomalous spike. Because the catalog deadline is inconsistent and precedes the observed trajectory, the stable post-deadline level is carried forward."
+      }
     },
     {
       "series_id": "series_04",
@@ -305,8 +428,38 @@ window.CASE_LLM_BASELINE = {
         0.999,
         0.999
       ],
+      "deadline_hours_from_last_history": 9.5,
+      "deadline_metadata_anomaly": false,
       "predictions": {
-        "closed_llm": [
+        "trajectory_only": [
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999
+        ],
+        "sanitized_semantics": [
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999,
+          0.6799999999999999
+        ],
+        "full_semantics": [
           0.6799999999999999,
           0.6799999999999999,
           0.6799999999999999,
@@ -350,7 +503,15 @@ window.CASE_LLM_BASELINE = {
         ]
       },
       "metrics": {
-        "closed_llm": {
+        "trajectory_only": {
+          "mae": 0.11883333333333342,
+          "rmse": 0.1885788959560428
+        },
+        "sanitized_semantics": {
+          "mae": 0.11883333333333342,
+          "rmse": 0.1885788959560428
+        },
+        "full_semantics": {
           "mae": 0.11883333333333342,
           "rmse": 0.1885788959560428
         },
@@ -363,7 +524,11 @@ window.CASE_LLM_BASELINE = {
           "rmse": 0.18594728105648758
         }
       },
-      "llm_rationale": "Local-level persistence at the long-running stable center, with negligible trend across irregular observation gaps."
+      "llm_rationales": {
+        "trajectory_only": "The full history is highly stationary, fluctuating almost exclusively between 0.31 and 0.32, with the latest observation at 0.32. Forecasts therefore remain at 0.32.",
+        "sanitized_semantics": "The outcome-B probability has been exceptionally stable around 0.31–0.32 throughout the history, including immediately before the forecast origin. The approaching game deadline may increase realized volatility, but the supplied trajectory provides no directional evidence, so forecasts remain near 0.32.",
+        "full_semantics": "The Patriots probability has been exceptionally stable around 0.31–0.32 across the full history, including the latest observations. With no directional movement before the event deadline, the forecast remains at 0.32, including immediately afterward rather than inventing an outcome."
+      }
     },
     {
       "series_id": "series_05",
@@ -398,8 +563,36 @@ window.CASE_LLM_BASELINE = {
         0.999,
         0.999
       ],
+      "deadline_hours_from_last_history": -133.0,
+      "deadline_metadata_anomaly": true,
       "predictions": {
-        "closed_llm": [
+        "trajectory_only": [
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999
+        ],
+        "sanitized_semantics": [
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999,
+          0.999
+        ],
+        "full_semantics": [
           0.999,
           0.999,
           0.999,
@@ -440,7 +633,15 @@ window.CASE_LLM_BASELINE = {
         ]
       },
       "metrics": {
-        "closed_llm": {
+        "trajectory_only": {
+          "mae": 0.0,
+          "rmse": 0.0
+        },
+        "sanitized_semantics": {
+          "mae": 0.0,
+          "rmse": 0.0
+        },
+        "full_semantics": {
           "mae": 0.0,
           "rmse": 0.0
         },
@@ -453,7 +654,11 @@ window.CASE_LLM_BASELINE = {
           "rmse": 2.9752771908790836e-16
         }
       },
-      "llm_rationale": "Boundary-aware persistence forecast at the sustained upper plateau."
+      "llm_rationales": {
+        "trajectory_only": "After an early increase, the series has stayed tightly pinned near the upper probability bound, predominantly at 0.999. The forecast maintains that stable ceiling regime.",
+        "sanitized_semantics": "Outcome A has traded at 0.998–0.999 for nearly the entire observed period and ends at 0.999. The catalog deadline is explicitly inconsistent with the trajectory, so the forecast follows the persistent upper-bound regime.",
+        "full_semantics": "The Yes probability has stayed at approximately 0.999 for nearly the entire observed period. Since the supplied deadline predates the history and the trajectory is effectively settled at the upper bound, the forecast preserves 0.999."
+      }
     }
   ]
 };

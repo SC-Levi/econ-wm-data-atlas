@@ -198,8 +198,8 @@
 
     <section class="section shell" id="llm-demo">
       <div class="section-heading">
-        <div><p class="eyebrow">CASE FORECAST DEMO</p><h2>只看匿名轨迹，闭源 LLM 能预测隐藏末段吗？</h2></div>
-        <p>这是对网页案例的轻量展示实验，不是正式 Track A。它检验 LLM 对匿名数值序列的外推能力，不提供事件文本、新闻或跨事件证据。</p>
+        <div><p class="eyebrow">SEMANTICS ABLATION DEMO</p><h2>加入事件语义，闭源 LLM 能更好地预测隐藏末段吗？</h2></div>
+        <p>这是对网页案例的三臂消融，不是正式 Track A：匿名轨迹、匿名轨迹＋结构化语义＋距截止时间、匿名轨迹＋完整原始语义。</p>
       </div>
 
       <div class="direct-answer">
@@ -208,23 +208,23 @@
       </div>
 
       <div class="llm-protocol-grid">
-        <article><span>01 / BLIND</span><h3>移除语义身份</h3><p>不输入事件名、问题、outcome、market ID 和真实日期，只保留相对小时与概率。</p></article>
-        <article><span>02 / HOLDOUT</span><h3>隐藏轨迹末段</h3><p>每条轨迹隐藏最后约 10%，最少 2、最多 12 个展示点，在相同点上比较所有方法。</p></article>
-        <article><span>03 / TRANSFORM</span><h3>破坏精确匹配</h3><p>时间从任意原点重新计时；部分序列执行 <code>p → 1-p</code>，评分前再还原方向。</p></article>
-        <article><span>04 / NO TOOLS</span><h3>全新隔离会话</h3><p>闭源模型在空目录中运行；禁止搜索、浏览和工具调用，本次审计到的工具调用数为 <b id="llm-tool-calls">—</b>。</p></article>
+        <article><span>01 / SHARED CONTROL</span><h3>固定同一预测任务</h3><p>三组使用相同的 5 条历史、49 个隐藏点、模型和解码设置，并在独立隔离会话中运行；工具调用合计 <b id="llm-tool-calls">—</b>。</p></article>
+        <article><span>02 / TRAJECTORY ONLY</span><h3>只看匿名轨迹</h3><p>只输入相对小时和概率；移除事件、outcome、market ID、绝对日期和截止时间。</p></article>
+        <article><span>03 / SANITIZED</span><h3>加入匿名化语义</h3><p>增加领域、合约结构、匿名 outcome 方向和距 catalog deadline 小时数，不暴露实体与绝对日期。</p></article>
+        <article><span>04 / FULL SEMANTICS</span><h3>加入完整原始语义</h3><p>增加原始问题、父事件标题、真实答案标签与绝对时间；<b>可能受预训练知识污染</b>。</p></article>
       </div>
 
       <div id="llm-metrics" class="llm-metrics"></div>
       <div class="table-wrap llm-table-wrap"><table id="llm-results-table"></table></div>
 
       <div class="forecast-legend" aria-label="预测图图例">
-        <span class="history">可见历史</span><span class="actual">隐藏真实值</span><span class="model">Closed LLM</span><span class="persist">Persistence</span>
+        <span class="history">可见历史</span><span class="actual">隐藏真实值</span><span class="trajectory">匿名轨迹</span><span class="sanitized">＋匿名语义</span><span class="full">＋完整语义</span><span class="persist">Persistence</span>
       </div>
       <div id="llm-case-grid" class="llm-case-grid"></div>
 
       <div class="demo-boundary">
         <b>如何解释：</b>
-        <p>该协议阻止模型用事件名称搜索答案，并降低与公开轨迹精确匹配的可能，但无法证明闭源模型的预训练语料从未包含原始数据。结果仅说明：在这 5 条展示轨迹、49 个隐藏点上，匿名数值外推没有稳定超过 persistence。</p>
+        <p>匿名语义臂用于检验事件类型、合约结构和截止时间是否提供增量；完整语义臂会暴露真实事件文本与日期，因此即使禁止搜索，也无法排除模型在预训练中见过事件或结果。三组结果接近，不支持语义在这 5 条展示轨迹上带来稳定改善；完整语义结果必须标注为“可能受预训练知识污染”。</p>
         <a href="data/case_llm_baseline.json">下载逐点结果 →</a>
       </div>
     </section>
