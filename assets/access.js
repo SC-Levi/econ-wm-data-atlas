@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ACCESS_CODE = "Atlas-Cedar-47-Orbit";
+  const ACCESS_CODE = "666";
   const SESSION_KEY = "econwm-atlas-access";
   const root = document.documentElement;
   const gate = document.querySelector("#access-gate");
