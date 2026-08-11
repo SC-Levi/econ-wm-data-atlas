@@ -7,6 +7,7 @@ Data Atlas v1 是当前 Polymarket 数据审计的公开网页与离线入口。
 - 每个事件包含哪些字段，单条轨迹是什么形式；
 - 不同轨迹的长度、采样频率和数据量如何分布；
 - 七个代表案例分别揭示什么数据结构与建模边界；
+- 闭源 LLM 在 5 条匿名案例轨迹上的末段预测是否超过 persistence；
 - 原始 JSON / parquet 记录如何转成统一的 history / target 样本；
 - 当前能够和不能声称的研究边界。
 
@@ -46,6 +47,9 @@ PYTHONPATH=src python -m econwm.eval.build_polymarket_data_atlas_v1 \
   --p1b-root runs/polymarket_p1b_multiscale_v0 \
   --pilot-root runs/polymarket_fast_dataset_v0 \
   --out-dir outputs/polymarket_data_atlas_v1
+
+python scripts/run_polymarket_case_llm_baseline.py
+python scripts/export_polymarket_case_llm_baseline.py
 ```
 
 网页只发布浏览所需的紧凑摘要；研究文档和完整数据仍保留在私有项目仓库中。

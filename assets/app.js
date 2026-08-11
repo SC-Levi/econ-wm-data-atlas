@@ -2,6 +2,7 @@
   "use strict";
 
   const data = window.ATLAS_DATA;
+  const llmDemo = window.CASE_LLM_BASELINE;
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const fmt = (value, digits = 0) => value == null ? "—" : new Intl.NumberFormat("zh-CN", { maximumFractionDigits: digits }).format(value);
@@ -196,6 +197,65 @@
     button.classList.add("active");
     $$(".case-card").forEach((card) => card.classList.toggle("hidden", button.dataset.filter !== "all" && card.dataset.kind !== button.dataset.filter));
   }));
+
+  const methodLabels = {
+    closed_llm: "Closed LLM",
+    persistence: "Persistence",
+    recent_linear_drift: "Recent drift",
+  };
+  const hiddenPointCount = llmDemo.cases.reduce((total, item) => total + item.holdout_points, 0);
+  const llmAggregate = llmDemo.aggregate.closed_llm;
+  const persistenceAggregate = llmDemo.aggregate.persistence;
+  const driftAggregate = llmDemo.aggregate.recent_linear_drift;
+  $("#llm-direct-answer").innerHTML = `在 ${fmt(llmDemo.cases.length)} 条展示轨迹、${fmt(hiddenPointCount)} 个隐藏点上，<b>${escape(llmDemo.model)}</b> 的 MAE 为 <b>${llmAggregate.mae.toFixed(4)}</b>，与 persistence 的 ${persistenceAggregate.mae.toFixed(4)} 基本持平；RMSE 为 ${llmAggregate.rmse.toFixed(4)}，略低于 persistence 的 ${persistenceAggregate.rmse.toFixed(4)}，但高于 recent drift 的 ${driftAggregate.rmse.toFixed(4)}。这次演示没有显示 closed LLM 对匿名概率轨迹具有明确优势。`;
+  $("#llm-tool-calls").textContent = fmt(llmDemo.model_tool_calls);
+  const llmMetricCards = [
+    ["CLOSED LLM MAE", llmAggregate.mae.toFixed(4), llmDemo.model],
+    ["PERSISTENCE MAE", persistenceAggregate.mae.toFixed(4), "同一样本预测地板"],
+    ["CLOSED LLM RMSE", llmAggregate.rmse.toFixed(4), `persistence ${persistenceAggregate.rmse.toFixed(4)}`],
+    ["HIDDEN POINTS", fmt(hiddenPointCount), `${fmt(llmDemo.cases.length)} cases · single pass`],
+  ];
+  $("#llm-metrics").innerHTML = llmMetricCards.map(([label, value, detail]) => `<article class="llm-metric"><span>${escape(label)}</span><b>${escape(value)}</b><small>${escape(detail)}</small></article>`).join("");
+
+  const winner = (metrics) => Object.entries(metrics).sort((left, right) => left[1].mae - right[1].mae)[0][0];
+  $("#llm-results-table").innerHTML = `<thead><tr><th>展示案例</th><th>隐藏点</th><th>Closed LLM MAE</th><th>Persistence MAE</th><th>Recent drift MAE</th><th>最低 MAE</th></tr></thead><tbody>${llmDemo.cases.map((item) => {
+    const best = winner(item.metrics);
+    return `<tr><td><b>${escape(item.case_slug)}</b></td><td>${fmt(item.holdout_points)}</td><td class="${best === "closed_llm" ? "best" : ""}">${item.metrics.closed_llm.mae.toFixed(4)}</td><td class="${best === "persistence" ? "best" : ""}">${item.metrics.persistence.mae.toFixed(4)}</td><td class="${best === "recent_linear_drift" ? "best" : ""}">${item.metrics.recent_linear_drift.mae.toFixed(4)}</td><td>${escape(methodLabels[best])}</td></tr>`;
+  }).join("")}</tbody>`;
+
+  const forecastChart = (caseItem, result) => {
+    const width = 520, height = 175;
+    const plot = { left: 43, right: 12, top: 12, bottom: 137 };
+    const holdout = result.holdout_points;
+    const fullHistory = caseItem.trajectory_1h.slice(0, -holdout);
+    const targetPoints = caseItem.trajectory_1h.slice(-holdout);
+    const history = fullHistory.slice(-Math.min(36, fullHistory.length));
+    const visible = [...history, ...targetPoints];
+    const times = visible.map((point) => Date.parse(point.time));
+    const firstTime = times[0], lastTime = times.at(-1);
+    const span = Math.max(lastTime - firstTime, 1);
+    const x = (time) => plot.left + (Date.parse(time) - firstTime) / span * (width - plot.left - plot.right);
+    const y = (value) => plot.top + (1 - Math.min(1, Math.max(0, Number(value)))) * (plot.bottom - plot.top);
+    const polyline = (rows) => rows.map(([time, value]) => `${x(time).toFixed(1)},${y(value).toFixed(1)}`).join(" ");
+    const historyRows = history.map((point) => [point.time, point.price]);
+    const anchor = history.at(-1);
+    const actualRows = [[anchor.time, anchor.price], ...targetPoints.map((point) => [point.time, point.price])];
+    const modelRows = [[anchor.time, anchor.price], ...targetPoints.map((point, index) => [point.time, result.predictions.closed_llm[index]])];
+    const persistenceRows = [[anchor.time, anchor.price], ...targetPoints.map((point, index) => [point.time, result.predictions.persistence[index]])];
+    const cutoffX = x(targetPoints[0].time);
+    const yTicks = [1, .5, 0].map((value) => `<line class="grid" x1="${plot.left}" y1="${y(value)}" x2="${width - plot.right}" y2="${y(value)}"></line><text x="${plot.left - 8}" y="${y(value) + 3}" text-anchor="end">${value.toFixed(1)}</text>`).join("");
+    return `<svg class="forecast-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="可见历史、隐藏真实值、闭源 LLM 与 persistence 预测对比">
+      ${yTicks}<line class="axis" x1="${plot.left}" y1="${plot.top}" x2="${plot.left}" y2="${plot.bottom}"></line><line class="axis" x1="${plot.left}" y1="${plot.bottom}" x2="${width - plot.right}" y2="${plot.bottom}"></line>
+      <polyline class="history" points="${polyline(historyRows)}"></polyline><polyline class="actual" points="${polyline(actualRows)}"></polyline><polyline class="model" points="${polyline(modelRows)}"></polyline><polyline class="persist" points="${polyline(persistenceRows)}"></polyline>
+      <line class="cutoff" x1="${cutoffX}" y1="${plot.top}" x2="${cutoffX}" y2="${plot.bottom}"></line><text class="cutoff-label" x="${cutoffX + 5}" y="${plot.top + 9}">forecast origin</text>
+      <text x="${plot.left}" y="${plot.bottom + 16}">${date(visible[0].time)}</text><text x="${width - plot.right}" y="${plot.bottom + 16}" text-anchor="end">${date(visible.at(-1).time)}</text><text x="${(plot.left + width - plot.right) / 2}" y="${height - 4}" text-anchor="middle">UTC time · p_answer1 ∈ [0,1]</text>
+    </svg>`;
+  };
+  const caseByMarket = new Map(data.cases.map((item) => [String(item.market_id), item]));
+  $("#llm-case-grid").innerHTML = llmDemo.cases.map((result) => {
+    const caseItem = caseByMarket.get(String(result.market_id));
+    return `<article class="llm-case-card"><div class="llm-case-top"><span>${escape(result.series_id)} · ${fmt(result.history_points)} history points</span><b>${fmt(result.holdout_points)} hidden</b></div><h3>${escape(caseItem.question_text)}</h3><p>模型输入中未出现该标题；此处仅在评分后恢复案例身份以便解释。</p>${forecastChart(caseItem, result)}<div class="llm-case-metrics"><span><b>${result.metrics.closed_llm.mae.toFixed(4)}</b>LLM MAE</span><span><b>${result.metrics.persistence.mae.toFixed(4)}</b>Persistence</span><span><b>${result.metrics.recent_linear_drift.mae.toFixed(4)}</b>Recent drift</span></div></article>`;
+  }).join("");
 
   const pilotMetrics = [
     [fmt(31949309), "formal calendar samples"],
