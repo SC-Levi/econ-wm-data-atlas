@@ -131,19 +131,37 @@
   };
 
   const sparkline = (points) => {
-    if (!points.length) return `<div class="no-trajectory">无可信 P1B 小时轨迹</div>`;
-    const width = 640, height = 145, pad = 10;
-    const values = points.map((point) => Number(point.price));
-    let min = Math.min(...values), max = Math.max(...values);
-    if (max === min) { min -= .01; max += .01; }
+    if (!points.length) return `<div class="no-trajectory"><b>无可信 P1B 小时轨迹</b><span>横轴：UTC 时间 · 纵轴：p_answer1 概率（0–1）</span></div>`;
+    const width = 640, height = 210;
+    const plot = { left: 58, right: 16, top: 15, bottom: 164 };
+    const timestamps = points.map((point) => Date.parse(point.time));
+    const firstTime = timestamps[0];
+    const lastTime = timestamps.at(-1);
+    const timeSpan = Math.max(lastTime - firstTime, 1);
     const coords = points.map((point, index) => {
-      const x = pad + index / Math.max(points.length - 1, 1) * (width - pad * 2);
-      const y = pad + (max - point.price) / (max - min) * (height - pad * 2);
+      const timeRatio = Number.isFinite(timestamps[index]) ? (timestamps[index] - firstTime) / timeSpan : index / Math.max(points.length - 1, 1);
+      const probability = Math.min(1, Math.max(0, Number(point.price)));
+      const x = plot.left + timeRatio * (width - plot.left - plot.right);
+      const y = plot.top + (1 - probability) * (plot.bottom - plot.top);
       return [x, y];
     });
     const line = coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-    const area = `${pad},${height - pad} ${line} ${width - pad},${height - pad}`;
-    return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="小时价格轨迹"><line class="grid" x1="${pad}" y1="${height / 2}" x2="${width - pad}" y2="${height / 2}"></line><polygon class="area" points="${area}"></polygon><polyline class="line" points="${line}"></polyline></svg>`;
+    const area = `${plot.left},${plot.bottom} ${line} ${width - plot.right},${plot.bottom}`;
+    const middleTime = new Date(firstTime + timeSpan / 2).toISOString();
+    const yTicks = [1, .5, 0].map((value) => {
+      const y = plot.top + (1 - value) * (plot.bottom - plot.top);
+      return `<line class="grid" x1="${plot.left}" y1="${y}" x2="${width - plot.right}" y2="${y}"></line><text class="tick y-tick" x="${plot.left - 10}" y="${y + 3}">${value.toFixed(1)}</text>`;
+    }).join("");
+    const xTicks = [[plot.left, date(points[0].time), "start"], [(plot.left + width - plot.right) / 2, date(middleTime), "middle"], [width - plot.right, date(points.at(-1).time), "end"]]
+      .map(([x, label, anchor]) => `<line class="tick-mark" x1="${x}" y1="${plot.bottom}" x2="${x}" y2="${plot.bottom + 5}"></line><text class="tick x-tick" x="${x}" y="${plot.bottom + 18}" text-anchor="${anchor}">${label}</text>`).join("");
+    return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="横轴为 UTC 时间，纵轴为 p_answer1 概率，范围 0 到 1">
+      <title>p_answer1 小时价格轨迹</title>
+      <desc>横轴为 UTC 时间；纵轴为 answer1 概率，固定范围从 0 到 1。</desc>
+      ${yTicks}<line class="axis" x1="${plot.left}" y1="${plot.top}" x2="${plot.left}" y2="${plot.bottom}"></line><line class="axis" x1="${plot.left}" y1="${plot.bottom}" x2="${width - plot.right}" y2="${plot.bottom}"></line>
+      <polygon class="area" points="${area}"></polygon><polyline class="line" points="${line}"></polyline>${xTicks}
+      <text class="axis-label y-label" transform="translate(14 ${(plot.top + plot.bottom) / 2}) rotate(-90)" text-anchor="middle">p_answer1 probability</text>
+      <text class="axis-label x-label" x="${(plot.left + width - plot.right) / 2}" y="${height - 7}" text-anchor="middle">UTC time</text>
+    </svg>`;
   };
 
   $("#case-grid").innerHTML = data.cases.map((item, index) => {
@@ -162,6 +180,7 @@
       <p class="case-summary">${escape(item.summary)}</p>
       <div class="case-stats"><span><b>${fmt(item.trusted_trade_count)}</b>trusted trades</span><span><b>${fmt(item.observed_points["1m"])}</b>1m points</span><span><b>${fmt(item.observed_points["15m"])}</b>15m points</span><span><b>${fmt(item.observed_points["1h"])}</b>1h points</span></div>
       ${sparkline(item.trajectory_1h)}
+      <div class="axis-legend"><span><b>横轴 X</b>UTC 时间（左 → 右）</span><span><b>纵轴 Y</b><code>p_answer1</code> 概率（0–1）</span></div>
       <div class="case-timeline"><span>${escape(period)}</span><span>p_answer1 <b>${firstPrice} → ${lastPrice}</b></span></div>
       <div class="case-detail-grid">
         <section><span>EVENT CONTEXT</span><p>${escape(notes.context)}</p></section>

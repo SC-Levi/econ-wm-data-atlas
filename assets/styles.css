@@ -181,11 +181,21 @@ td b { color: var(--green); }
 .case-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 18px 0; background: rgba(255,255,255,.1); }
 .case-stats span { padding: 12px; background: #14231d; color: rgba(255,255,255,.4); font-size: 9px; }
 .case-stats b { display: block; margin-bottom: 5px; color: #fff; font-size: 14px; }
-.sparkline { display: block; width: 100%; height: 145px; background: rgba(0,0,0,.12); }
+.sparkline { display: block; width: 100%; height: auto; aspect-ratio: 640 / 210; background: rgba(0,0,0,.12); }
 .sparkline .grid { stroke: rgba(255,255,255,.09); stroke-width: 1; }
+.sparkline .axis, .sparkline .tick-mark { stroke: rgba(255,255,255,.24); stroke-width: 1; }
 .sparkline .area { fill: rgba(184,239,121,.08); }
 .sparkline .line { fill: none; stroke: var(--lime); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.no-trajectory { display: grid; height: 145px; place-items: center; color: rgba(255,255,255,.35); border: 1px dashed rgba(255,255,255,.14); font-size: 11px; }
+.sparkline .tick { fill: rgba(255,255,255,.45); font: 9px ui-monospace, monospace; }
+.sparkline .y-tick { text-anchor: end; }
+.sparkline .axis-label { fill: rgba(255,255,255,.62); font: 800 9px ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; }
+.no-trajectory { display: grid; min-height: 180px; place-content: center; gap: 9px; text-align: center; color: rgba(255,255,255,.35); border: 1px dashed rgba(255,255,255,.14); font-size: 11px; }
+.no-trajectory b { color: rgba(255,255,255,.5); font-weight: 650; }
+.no-trajectory span { font: 9px ui-monospace, monospace; }
+.axis-legend { display: flex; justify-content: space-between; gap: 18px; margin-top: 9px; color: rgba(255,255,255,.42); font-size: 9px; }
+.axis-legend span { display: flex; gap: 7px; align-items: center; }
+.axis-legend b { color: var(--lime); font: 800 8px ui-monospace, monospace; letter-spacing: .1em; }
+.axis-legend code { color: rgba(255,255,255,.7); }
 .case-callout { margin: 18px 0 0; padding: 13px 15px; color: rgba(255,255,255,.62); border-left: 2px solid var(--orange); background: rgba(0,0,0,.12); font-size: 11px; line-height: 1.65; }
 .case-timeline { display: flex; justify-content: space-between; gap: 18px; margin: 10px 0 0; color: rgba(255,255,255,.36); font: 9px ui-monospace, monospace; }
 .case-timeline b { color: rgba(255,255,255,.75); }
@@ -279,5 +289,6 @@ footer a { color: var(--lime); }
   .direct-answer { grid-template-columns: 1fr; gap: 9px; }
   .case-detail-grid { grid-template-columns: 1fr; }
   .case-stats { grid-template-columns: repeat(2, 1fr); }
+  .axis-legend { display: grid; gap: 5px; font-size: 10px; }
   .pipeline { grid-template-columns: 1fr; }
 }
