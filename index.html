@@ -35,6 +35,7 @@
         <a href="#schema">Q2 结构</a>
         <a href="#distribution">Q3 分布</a>
         <a href="#cases">Q4 案例</a>
+        <a href="#research-baselines">研究 Baseline</a>
         <a href="#samples">Q5 样本</a>
       </div>
     </nav>
@@ -226,6 +227,102 @@
         <b>如何解释：</b>
         <p>匿名语义臂用于检验事件类型、合约结构和截止时间是否提供增量；完整语义臂会暴露真实事件文本与日期，因此即使禁止搜索，也无法排除模型在预训练中见过事件或结果。三组结果接近，不支持语义在这 5 条展示轨迹上带来稳定改善；完整语义结果必须标注为“可能受预训练知识污染”。</p>
         <a href="data/case_llm_baseline.json">下载逐点结果 →</a>
+      </div>
+    </section>
+
+    <section class="section section-dark baseline-section" id="research-baselines">
+      <div class="shell">
+        <div class="section-heading light">
+          <div><p class="eyebrow">RESEARCH BASELINES / AGENTIC COMPONENTS</p><h2>EventConnector 与 SWM-Bench，各自解决什么？</h2></div>
+          <p>EventConnector 研究“应检索哪些历史事件”，SWM-Bench 研究“给定候选事件后，信念状态怎样转移”。它们构成检索与条件转移 baseline，但还不是包含 trader、订单簿和制度互动的完整多智能体模拟器。</p>
+        </div>
+
+        <div class="direct-answer inverse baseline-answer">
+          <span>DIRECT ANSWER</span>
+          <p>两篇工作的共同价值，是把聚合预测市场轨迹从普通时序数据推进为可检索、可条件化的 <b>belief-state world model</b>。对本项目而言，EventConnector 对应 H2 / P2 的候选检索，SWM-Bench 对应 H3 的条件证据增量；只有另行完成 target-only 对照、公共状态控制、负对照和 rolling OOS 的 P3，才能讨论 H4 跨事件预测性关系。</p>
+        </div>
+
+        <div class="agentic-boundary" aria-label="两项研究的 agentic 定位">
+          <article><span>01 / MEMORY</span><h3>检索相关经验</h3><p>EventConnector 让 query 根据轨迹、文本和图关系选择历史训练事件，相当于一个 relation-aware memory。</p></article>
+          <i>→</i>
+          <article><span>02 / CONDITION</span><h3>选择条件证据</h3><p>SWM 的 attributor 在新闻候选中分配权重，并保留“没有候选新闻足以解释变化”的 null 分支。</p></article>
+          <i>→</i>
+          <article><span>03 / TRANSITION</span><h3>预测条件转移</h3><p>SWM 的 decoder 将当前价格历史与单条事件映射到下一日概率变化，可用于 forecasting mixture 或假设事件条件预测。</p></article>
+          <i>≠</i>
+          <article class="missing"><span>NOT INCLUDED</span><h3>多主体制度仿真</h3><p>两篇工作都不生成个体 trader、信息网络、预算约束、订单簿清算或适应性制度均衡。</p></article>
+        </div>
+
+        <div class="baseline-paper-grid">
+          <article class="baseline-paper-card eventconnector">
+            <div class="baseline-card-head"><span>EVENTCONNECTOR · 2026</span><a href="https://arxiv.org/abs/2606.15448" rel="noreferrer">论文 ↗</a></div>
+            <h3>哪些历史事件，是当前 query 更有用的训练经验？</h3>
+            <p class="baseline-thesis">它不是直接预测“事件之间是否存在真实关系”，而是用局部共波动图和语义锚点，为每个 query 选择一个小而相关的训练池，再让同一基础时序模型预测未来轨迹。</p>
+            <dl class="baseline-facts">
+              <div><dt>任务</dt><dd>过去 10 个日点 → 未来 7 日概率路径；主设置 top-k = 10。</dd></div>
+              <div><dt>方法链</dt><dd>训练事件 → 局部相关图 / DTW / pairwise Granger → 文本＋价格 hybrid anchor → 两跳检索 → query-specific predictor。</dd></div>
+              <div><dt>Polymarket 证据</dt><dd>9,803 个训练窗口、3,692 个测试窗口、9 类预测器；EC-Fusion 相对每个单元最强可比检索平均降低 RMSE 6.87%。</dd></div>
+              <div><dt>证据边界</dt><dd>下游误差验证的是 retrieved set utility，不是单条 graph edge 的真实性；相关、lag 与 Granger 也不是结构因果。</dd></div>
+            </dl>
+          </article>
+
+          <article class="baseline-paper-card swm">
+            <div class="baseline-card-head"><span>SWM-BENCH · 2026</span><div><a href="https://arxiv.org/abs/2606.11482" rel="noreferrer">论文 ↗</a><a href="https://github.com/ulab-uiuc/social-world-model" rel="noreferrer">代码 ↗</a></div></div>
+            <h3>当前信念与候选新闻，怎样共同决定下一步信念？</h3>
+            <p class="baseline-thesis">它把“哪条新闻相关”和“这条新闻对应多大概率变化”拆成 attributor 与 event-conditioned decoder；训练期用看过未来变化的 teacher 生成弱归因，部署期只能使用 prior。</p>
+            <dl class="baseline-facts">
+              <div><dt>任务</dt><dd>16 个日点＋目标前最多 30 条候选新闻 → 下一日概率与变化。</dd></div>
+              <div><dt>方法链</dt><dd>hindsight teacher → prior attributor → 单事件 shift decoder → 带 persistence null 的加权预测。</dd></div>
+              <div><dt>Polymarket 证据</dt><dd>6,705 个训练 transition、3,483 个测试 transition；SWM prior 全集 MASE 1.141，新闻归因子集 MASE 0.933、方向准确率 0.685。</dd></div>
+              <div><dt>证据边界</dt><dd>它在条件子集的方向预测更强，却未在全测试集稳定超过 persistence；future-aware posterior 只能作训练监督或诊断，不能作为部署结果。</dd></div>
+            </dl>
+          </article>
+        </div>
+
+        <div class="baseline-comparison table-wrap">
+          <table>
+            <thead><tr><th>比较层</th><th>EventConnector</th><th>SWM-Bench</th><th>本项目中的位置</th></tr></thead>
+            <tbody>
+              <tr><td><b>核心问题</b></td><td>哪些历史事件应进入训练集合？</td><td>哪条候选新闻相关，它对应多大下一步变化？</td><td>先分开检验检索增量 H2 与条件证据增量 H3</td></tr>
+              <tr><td><b>主要输出</b></td><td>query-specific retrieved set 与 7 日路径</td><td>事件权重、逐事件 shift 与下一日预测</td><td>统一放入 A-D / A-S 协议比较</td></tr>
+              <tr><td><b>什么得到验证</b></td><td>小训练预算下，检索集合能否降低预测误差</td><td>截止日前候选新闻能否改善概率变化预测</td><td>在相同 sample ID、预测器和预算下做成对增量</td></tr>
+              <tr><td><b>什么没有得到验证</b></td><td>单条事件边真实、稳定或具有因果传导</td><td>新闻是价格变化的真实原因或社会信念的无偏来源</td><td>跨事件关系必须另经 P3；首阶段结论仍是预测性增量</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="migration-heading">
+          <span>BASELINE TRANSFER</span>
+          <h3>参考它们，但不能原样搬运</h3>
+          <p>迁移目标不是复刻论文宣传数字，而是在本项目冻结的时间、身份和样本边界下，判断对应能力是否仍有增量。</p>
+        </div>
+
+        <div class="migration-grid">
+          <article>
+            <div class="migration-title"><span>A-D / EVENTCONNECTOR</span><b>检索 baseline</b></div>
+            <section><h4>保留</h4><p><code>10→7</code> 多步接口、固定 top-k、相同预测器与训练预算下的 random / BM25 / SBERT / DTW / graph retrieval 消融。</p></section>
+            <section><h4>必须改动</h4><ul><li>按真实共同 UTC 日期对齐，不按窗口数组位置直接相关；</li><li>图、阈值和索引只使用 forecast origin 前的数据，并做 rolling rebuild；</li><li>显式保留 market / event / family、answer 方向、mask、staleness 与共同活跃覆盖；</li><li>相关、DTW、lag、Granger 只进入 P2 候选；逐边结论交给 P3 的公共因子控制、反向边、时间置换、随机 pair、FDR 与 rolling OOS。</li></ul></section>
+            <p class="migration-status"><b>当前：</b>A-D 的 2,680,165 条正式样本已完成；E10–E12 尚未运行，43,971 条 P2 seed 也还没有 calendar-EC 轨迹信号。</p>
+          </article>
+
+          <article>
+            <div class="migration-title"><span>A-S / SWM-BENCH</span><b>条件证据 baseline</b></div>
+            <section><h4>保留</h4><p><code>16→1</code> 接口、<code>persistence + expected move</code> 分解、严格 evidence cutoff，以及 full test / 条件子集 / posterior diagnostic 分开报告。</p></section>
+            <section><h4>必须改动</h4><ul><li>先完成 history-only，对所有复杂方法使用同一 persistence 与训练型 target-only 地板；</li><li>新闻实验必须建立独立的 <code>published_at ≤ as_of_time</code> 契约，不能把 source market 文本冒充外部新闻；</li><li>主结果使用自然分布和 cold-family test，高变化或 attributed subset 只能作为诊断；</li><li>future-aware teacher 只能生成训练弱标签，测试推理不得看到 target；新闻增量与跨市场 source innovation 分成 H3 / H4 两个问题。</li></ul></section>
+            <p class="migration-status"><b>当前：</b>A-S 的 2,368,577 条正式样本及简单 history-only 地板已完成；E20/E21 尚未运行，P1B 也尚无满足截止契约的新闻语料。</p>
+          </article>
+        </div>
+
+        <div class="baseline-gates" aria-label="baseline 迁移的四个阶段门">
+          <article><span>G1</span><b>Target-only floor</b><p>先冻结 persistence、线性与标准时序模型。</p></article>
+          <i>→</i>
+          <article><span>G2</span><b>Public reproduction</b><p>在论文公开数据上复核接口、指标与方法量级。</p></article>
+          <i>→</i>
+          <article><span>G3</span><b>Local paired test</b><p>同一 P1B 样本、预测器与预算下比较是否有增量。</p></article>
+          <i>→</i>
+          <article><span>G4</span><b>P3 relation evidence</b><p>检索有效之后，才逐边做控制、负对照与时间外稳定性。</p></article>
+        </div>
+
+        <p class="baseline-source-note">来源：指定的 EventConnector / SWM-Bench 论文与研究笔记；页面数字按论文 Polymarket split 与当前本地实验进度整理。论文结果与本项目结果在文中明确分列。</p>
       </div>
     </section>
 
