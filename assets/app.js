@@ -6,33 +6,49 @@
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const fmt = (value, digits = 0) => value == null ? "—" : new Intl.NumberFormat("zh-CN", { maximumFractionDigits: digits }).format(value);
-  const compact = (value) => value == null ? "—" : new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 }).format(value);
+  const scaleFmt = (value) => new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  const magnitude = (value) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "";
+    if (Math.abs(number) >= 1e8) return `约 ${scaleFmt(number / 1e8)} 亿`;
+    if (Math.abs(number) >= 1e4) return `约 ${scaleFmt(number / 1e4)} 万`;
+    return "";
+  };
+  const readable = (value, digits = 0) => {
+    const exact = fmt(value, digits);
+    const scale = magnitude(value);
+    return scale ? `${exact}（${scale}）` : exact;
+  };
+  const readableText = (value) => escape(value).replace(/\d{1,3}(?:,\d{3})+/g, (token) => {
+    const scale = magnitude(Number(token.replaceAll(",", "")));
+    return scale ? `${token}（${scale}）` : token;
+  }).replace(/） (?=(个|条|笔|行))/g, "）");
   const bytes = (value) => `${(value / 1024 ** 3).toFixed(2)} GiB`;
   const date = (value) => value ? value.slice(0, 10) : "—";
   const escape = (value) => String(value ?? "—").replace(/[&<>'"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
 
   $("#source-status").textContent = data.source_status.toUpperCase();
   $("#generated-at").textContent = `Payload generated ${data.generated_at_utc}`;
-  $("#hero-events").textContent = fmt(data.headline.events);
-  $("#hero-markets").textContent = fmt(data.headline.traded_markets);
+  $("#hero-events").innerHTML = `${fmt(data.headline.events)}<small>${magnitude(data.headline.events)}</small>`;
+  $("#hero-markets").innerHTML = `${fmt(data.headline.traded_markets)}<small>${magnitude(data.headline.traded_markets)}</small>`;
   $("#hero-span").textContent = data.headline.span_years.toFixed(2);
-  $("#scale-direct-answer").innerHTML = `共有 <b>${fmt(data.headline.events)} 个有效 events</b> 和 <b>${fmt(data.headline.traded_markets)} 个有成交 markets</b>。全局 UTC 时间点分别为 1 分钟 ${fmt(data.frequencies["1m"].distinct_utc_buckets)} 个、15 分钟 ${fmt(data.frequencies["15m"].distinct_utc_buckets)} 个、1 小时 ${fmt(data.frequencies["1h"].distinct_utc_buckets)} 个；对应的 market-time 观测行是 ${fmt(data.frequencies["1m"].rows)}、${fmt(data.frequencies["15m"].rows)} 和 ${fmt(data.frequencies["1h"].rows)}。覆盖 ${date(data.frequencies["1m"].first_bucket_utc)} 至 ${date(data.frequencies["1m"].last_bucket_utc)}，共 ${fmt(data.headline.span_days, 2)} 天（${data.headline.span_years.toFixed(2)} 年）。`;
+  $("#scale-direct-answer").innerHTML = `共有 <b>${readable(data.headline.events)}个有效 events</b> 和 <b>${readable(data.headline.traded_markets)}个有成交 markets</b>。全局 UTC 时间点分别为 1 分钟 ${readable(data.frequencies["1m"].distinct_utc_buckets)}个、15 分钟 ${readable(data.frequencies["15m"].distinct_utc_buckets)}个、1 小时 ${readable(data.frequencies["1h"].distinct_utc_buckets)}个；对应的 market-time 观测行是 ${readable(data.frequencies["1m"].rows)}、${readable(data.frequencies["15m"].rows)} 和 ${readable(data.frequencies["1h"].rows)}。覆盖 ${date(data.frequencies["1m"].first_bucket_utc)} 至 ${date(data.frequencies["1m"].last_bucket_utc)}，共 ${fmt(data.headline.span_days, 2)} 天（${data.headline.span_years.toFixed(2)} 年）。`;
 
   $("#status-list").innerHTML = data.status.map((item) => `
     <div class="status-item">
       <i class="status-dot ${escape(item.state)}"></i>
-      <div><b>${escape(item.name)}</b><small>${escape(item.detail)}</small></div>
+      <div><b>${escape(item.name)}</b><small>${readableText(item.detail)}</small></div>
       <span>${escape(item.state)}</span>
     </div>`).join("");
 
   const metrics = [
-    ["TRUSTED TRANSACTIONS", compact(data.headline.trusted_trades), "rows", `${fmt(data.headline.trusted_trades)} 笔可信成交`],
-    ["TRADED MARKETS", compact(data.headline.traded_markets), "markets", `catalog 共 ${fmt(data.headline.catalog_markets)} 个`],
-    ["VALID EVENTS", compact(data.headline.events), "events", "有可信成交的父事件"],
-    ["MARKET-MINUTES", compact(data.frequencies["1m"].rows), "rows", `${fmt(data.frequencies["1m"].rows)} 条观测`],
-    ["MARKET-15-MINUTES", compact(data.frequencies["15m"].rows), "rows", `${fmt(data.frequencies["15m"].rows)} 条观测`],
-    ["MARKET-HOURS", compact(data.frequencies["1h"].rows), "rows", `${fmt(data.frequencies["1h"].rows)} 条观测`],
-    ["REGULAR HOURS", compact(data.headline.regular_hour_rows), "rows", "含最多一小时状态延续"],
+    ["TRUSTED TRANSACTIONS", fmt(data.headline.trusted_trades), "rows", `${magnitude(data.headline.trusted_trades)} · 可信成交`],
+    ["TRADED MARKETS", fmt(data.headline.traded_markets), "markets", `${magnitude(data.headline.traded_markets)} · catalog 共 ${readable(data.headline.catalog_markets)}个`],
+    ["VALID EVENTS", fmt(data.headline.events), "events", `${magnitude(data.headline.events)} · 有可信成交的父事件`],
+    ["MARKET-MINUTES", fmt(data.frequencies["1m"].rows), "rows", `${magnitude(data.frequencies["1m"].rows)} · 观测行`],
+    ["MARKET-15-MINUTES", fmt(data.frequencies["15m"].rows), "rows", `${magnitude(data.frequencies["15m"].rows)} · 观测行`],
+    ["MARKET-HOURS", fmt(data.frequencies["1h"].rows), "rows", `${magnitude(data.frequencies["1h"].rows)} · 观测行`],
+    ["REGULAR HOURS", fmt(data.headline.regular_hour_rows), "rows", `${magnitude(data.headline.regular_hour_rows)} · 含最多一小时状态延续`],
     ["OBSERVED SPAN", data.headline.span_years.toFixed(2), "years", `${fmt(data.headline.span_days, 2)} 天`],
   ];
   $("#headline-metrics").innerHTML = metrics.map(([tag, value, unit, detail]) => `
@@ -41,7 +57,7 @@
   const frequencyOrder = ["1m", "15m", "1h"];
   $("#frequency-table").innerHTML = `<thead><tr><th>尺度</th><th>不同 UTC buckets</th><th>Market-time 行</th><th>Markets</th><th>观测范围</th><th>磁盘</th><th>研究用途</th></tr></thead><tbody>${frequencyOrder.map((key) => {
     const row = data.frequencies[key];
-    return `<tr><td><b>${key}</b></td><td>${fmt(row.distinct_utc_buckets)}</td><td>${fmt(row.rows)}</td><td>${fmt(row.market_count)}</td><td>${date(row.first_bucket_utc)} → ${date(row.last_bucket_utc)}</td><td>${bytes(row.bytes)}</td><td>${escape(row.role)}</td></tr>`;
+    return `<tr><td><b>${key}</b></td><td>${readable(row.distinct_utc_buckets)}</td><td>${readable(row.rows)}</td><td>${readable(row.market_count)}</td><td>${date(row.first_bucket_utc)} → ${date(row.last_bucket_utc)}</td><td>${bytes(row.bytes)}</td><td>${escape(row.role)}</td></tr>`;
   }).join("")}</tbody>`;
 
   const renderFields = (key, target, countTarget) => {
@@ -66,13 +82,13 @@
     $("#quantile-chart").innerHTML = quantileLabels.map(([key, label]) => {
       const value = values[key];
       const width = Math.log1p(value) / maxLog * 100;
-      return `<div class="quantile-row"><span>${label}</span><div class="bar-track"><i style="width:${width.toFixed(2)}%"></i></div><b>${fmt(value)}</b></div>`;
+      return `<div class="quantile-row"><span>${label}</span><div class="bar-track"><i style="width:${width.toFixed(2)}%"></i></div><b>${readable(value)}</b></div>`;
     }).join("");
-    $("#frequency-detail").innerHTML = `<span>UTC buckets <b>${fmt(row.distinct_utc_buckets)}</b></span><span>rows <b>${fmt(row.rows)}</b></span><span>disk <b>${bytes(row.bytes)}</b></span><span>role <b>${escape(row.role)}</b></span>`;
+    $("#frequency-detail").innerHTML = `<span>UTC buckets <b>${readable(row.distinct_utc_buckets)}</b></span><span>rows <b>${readable(row.rows)}</b></span><span>disk <b>${bytes(row.bytes)}</b></span><span>role <b>${escape(row.role)}</b></span>`;
   };
   renderQuantiles("1h");
   const hourlyPoints = data.frequencies["1h"].points_per_market;
-  $("#distribution-direct-answer").innerHTML = `轨迹长度呈明显长尾：1 小时 observed 轨迹的中位数只有 <b>${fmt(hourlyPoints.p50)} 个点</b>，P90 为 ${fmt(hourlyPoints.p90)}、P99 为 ${fmt(hourlyPoints.p99)}，最长达到 ${fmt(hourlyPoints.max)}；而 1 分钟层共有 ${fmt(data.frequencies["1m"].rows)} 条 market-time 观测。三种频率服务不同任务，正式实验以 1 小时为主，同时保留 15 分钟响应诊断和 1 分钟基础层。`;
+  $("#distribution-direct-answer").innerHTML = `轨迹长度呈明显长尾：1 小时 observed 轨迹的中位数只有 <b>${fmt(hourlyPoints.p50)} 个点</b>，P90 为 ${fmt(hourlyPoints.p90)}、P99 为 ${fmt(hourlyPoints.p99)}，最长达到 ${readable(hourlyPoints.max)}；而 1 分钟层共有 ${readable(data.frequencies["1m"].rows)} 条 market-time 观测。三种频率服务不同任务，正式实验以 1 小时为主，同时保留 15 分钟响应诊断和 1 分钟基础层。`;
   $$(".frequency-tabs button").forEach((button) => button.addEventListener("click", () => {
     $$(".frequency-tabs button").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
@@ -83,7 +99,7 @@
   const eventMaxLog = Math.log1p(eventMarket.max);
   $("#event-market-chart").innerHTML = quantileLabels.map(([key, label]) => {
     const value = eventMarket[key];
-    return `<div class="quantile-row"><span>${label}</span><div class="bar-track"><i style="width:${(Math.log1p(value) / eventMaxLog * 100).toFixed(2)}%"></i></div><b>${fmt(value)}</b></div>`;
+    return `<div class="quantile-row"><span>${label}</span><div class="bar-track"><i style="width:${(Math.log1p(value) / eventMaxLog * 100).toFixed(2)}%"></i></div><b>${readable(value)}</b></div>`;
   }).join("");
 
   const caseNotes = {
@@ -178,16 +194,16 @@
       <p class="case-event">${escape(item.event_title || "未验证父事件")}</p>
       <h3>${escape(item.question_text)}</h3>
       <p class="case-question">${escape(item.answer1)} ↔ ${escape(item.answer2)} · ${escape(eventMarkets)}</p>
-      <p class="case-summary">${escape(item.summary)}</p>
-      <div class="case-stats"><span><b>${fmt(item.trusted_trade_count)}</b>trusted trades</span><span><b>${fmt(item.observed_points["1m"])}</b>1m points</span><span><b>${fmt(item.observed_points["15m"])}</b>15m points</span><span><b>${fmt(item.observed_points["1h"])}</b>1h points</span></div>
+      <p class="case-summary">${readableText(item.summary)}</p>
+      <div class="case-stats"><span><b>${fmt(item.trusted_trade_count)}</b><em>${magnitude(item.trusted_trade_count)}</em>trusted trades</span><span><b>${fmt(item.observed_points["1m"])}</b><em>${magnitude(item.observed_points["1m"])}</em>1m points</span><span><b>${fmt(item.observed_points["15m"])}</b><em>${magnitude(item.observed_points["15m"])}</em>15m points</span><span><b>${fmt(item.observed_points["1h"])}</b><em>${magnitude(item.observed_points["1h"])}</em>1h points</span></div>
       ${sparkline(item.trajectory_1h)}
       <div class="axis-legend"><span><b>横轴 X</b>UTC 时间（左 → 右）</span><span><b>纵轴 Y</b><code>p_answer1</code> 概率（0–1）</span></div>
       <div class="case-timeline"><span>${escape(period)}</span><span>p_answer1 <b>${firstPrice} → ${lastPrice}</b></span></div>
       <div class="case-detail-grid">
-        <section><span>EVENT CONTEXT</span><p>${escape(notes.context)}</p></section>
-        <section><span>TRAJECTORY READING</span><p>${escape(notes.reading)}</p></section>
-        <section><span>WHY REPRESENTATIVE</span><p>${escape(notes.value)}</p></section>
-        <section><span>MODELING WARNING</span><p>${escape(notes.warning)}</p></section>
+        <section><span>EVENT CONTEXT</span><p>${readableText(notes.context)}</p></section>
+        <section><span>TRAJECTORY READING</span><p>${readableText(notes.reading)}</p></section>
+        <section><span>WHY REPRESENTATIVE</span><p>${readableText(notes.value)}</p></section>
+        <section><span>MODELING WARNING</span><p>${readableText(notes.warning)}</p></section>
       </div>
       <div class="case-callout">它回答：${escape(item.question)}</div>
     </article>`;
@@ -268,12 +284,12 @@
   }).join("");
 
   const pilotMetrics = [
-    [fmt(31949309), "formal calendar samples"],
-    [fmt(26330043), "cold-family samples"],
-    [fmt(192), "protocol × shard files"],
-    [fmt(3), "A-H / A-D / A-S protocols"],
+    [fmt(31949309), magnitude(31949309), "formal calendar samples"],
+    [fmt(26330043), magnitude(26330043), "cold-family samples"],
+    [fmt(192), "", "protocol × shard files"],
+    [fmt(3), "", "A-H / A-D / A-S protocols"],
   ];
-  $("#pilot-metrics").innerHTML = pilotMetrics.map(([value, label]) => `<article class="pilot-metric"><b>${value}</b><span>${label}</span></article>`).join("");
+  $("#pilot-metrics").innerHTML = pilotMetrics.map(([value, scale, label]) => `<article class="pilot-metric"><b>${value}</b>${scale ? `<small>${scale}</small>` : ""}<span>${label}</span></article>`).join("");
 
   const sample = data.pilot.sample;
   const pilotPreview = {
@@ -290,7 +306,9 @@
   const formalPreview = {
     dataset_version: "polymarket-track-a-v0",
     sample_count: 31949309,
+    sample_count_readable: "约 3,194.93 万",
     cold_family_sample_count: 26330043,
+    cold_family_sample_count_readable: "约 2,633.00 万",
     protocols: ["A-H: 24h -> 1/6/24h", "A-D: 10d -> 7d", "A-S: 16d -> 1d"],
     identity: ["sample_id", "protocol", "market_id", "event_id", "event_family_id"],
     boundary: ["as_of_time", "temporal_split", "cold_family_eligible"],

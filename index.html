@@ -44,7 +44,7 @@
       <div class="hero-main">
         <p class="eyebrow">ECONOMIC WORLD MODEL · POLYMARKET DATA ATLAS</p>
         <h1>从市场信念，<br><em>到世界模型数据。</em></h1>
-        <p class="hero-copy">我们从 7.63 亿笔可信成交中重建 37.97 万个事件、89.76 万个市场命题的多尺度概率轨迹，并将其物化为统一的“历史信息—预测目标”样本，为单事件预测、跨事件检索与预测性关系验证建立数据和评估基础。</p>
+        <p class="hero-copy">我们从 763,126,566（约 7.63 亿）笔可信成交中重建 379,711（约 37.97 万）个事件、897,580（约 89.76 万）个市场命题的多尺度概率轨迹，并将其物化为统一的“历史信息—预测目标”样本，为单事件预测、跨事件检索与预测性关系验证建立数据和评估基础。</p>
         <div class="hero-actions">
           <a class="button primary" href="#questions">探索数据与实验接口</a>
           <a class="button secondary" href="data/atlas.json">机器可读数据</a>
@@ -97,7 +97,7 @@
       <div class="table-wrap frequency-wrap">
         <table id="frequency-table"></table>
       </div>
-      <p class="table-note">Observed 层只保存至少发生一笔可信成交的 bucket，不创建全市场稠密空桶。</p>
+      <p class="table-note">数字口径：万级以上的规模同时显示精确值与“约 X 万／X 亿”；日期、比例、概率、容量和 ID 不换算。Observed 层只保存至少发生一笔可信成交的 bucket，不创建全市场稠密空桶。</p>
     </section>
 
     <section class="section section-dark" id="schema">
@@ -301,14 +301,14 @@
             <div class="migration-title"><span>A-D / EVENTCONNECTOR</span><b>检索 baseline</b></div>
             <section><h4>保留</h4><p><code>10→7</code> 多步接口、固定 top-k、相同预测器与训练预算下的 random / BM25 / SBERT / DTW / graph retrieval 消融。</p></section>
             <section><h4>必须改动</h4><ul><li>按真实共同 UTC 日期对齐，不按窗口数组位置直接相关；</li><li>图、阈值和索引只使用 forecast origin 前的数据，并做 rolling rebuild；</li><li>显式保留 market / event / family、answer 方向、mask、staleness 与共同活跃覆盖；</li><li>相关、DTW、lag、Granger 只进入 P2 候选；逐边结论交给 P3 的公共因子控制、反向边、时间置换、随机 pair、FDR 与 rolling OOS。</li></ul></section>
-            <p class="migration-status"><b>当前：</b>A-D 的 2,680,165 条正式样本已完成；E10–E12 尚未运行，43,971 条 P2 seed 也还没有 calendar-EC 轨迹信号。</p>
+            <p class="migration-status"><b>当前：</b>A-D 的 2,680,165（约 268.02 万）条正式样本已完成；E10–E12 尚未运行，43,971（约 4.40 万）条 P2 seed 也还没有 calendar-EC 轨迹信号。</p>
           </article>
 
           <article>
             <div class="migration-title"><span>A-S / SWM-BENCH</span><b>条件证据 baseline</b></div>
             <section><h4>保留</h4><p><code>16→1</code> 接口、<code>persistence + expected move</code> 分解、严格 evidence cutoff，以及 full test / 条件子集 / posterior diagnostic 分开报告。</p></section>
             <section><h4>必须改动</h4><ul><li>先完成 history-only，对所有复杂方法使用同一 persistence 与训练型 target-only 地板；</li><li>新闻实验必须建立独立的 <code>published_at ≤ as_of_time</code> 契约，不能把 source market 文本冒充外部新闻；</li><li>主结果使用自然分布和 cold-family test，高变化或 attributed subset 只能作为诊断；</li><li>future-aware teacher 只能生成训练弱标签，测试推理不得看到 target；新闻增量与跨市场 source innovation 分成 H3 / H4 两个问题。</li></ul></section>
-            <p class="migration-status"><b>当前：</b>A-S 的 2,368,577 条正式样本及简单 history-only 地板已完成；E20/E21 尚未运行，P1B 也尚无满足截止契约的新闻语料。</p>
+            <p class="migration-status"><b>当前：</b>A-S 的 2,368,577（约 236.86 万）条正式样本及简单 history-only 地板已完成；E20/E21 尚未运行，P1B 也尚无满足截止契约的新闻语料。</p>
           </article>
         </div>
 
@@ -335,7 +335,7 @@
 
         <div class="direct-answer">
           <span>DIRECT ANSWER</span>
-          <p>原始 JSON / parquet 记录经过六步转化：身份与方向统一 → 可信成交筛选 → 多尺度聚合 → 规则日历状态 → history/target 窗口 → 时间与事件族切分。最终得到 31,949,309 条固定日历样本，其中 26,330,043 条属于 cold-family 主视图。</p>
+          <p>原始 JSON / parquet 记录经过六步转化：身份与方向统一 → 可信成交筛选 → 多尺度聚合 → 规则日历状态 → history/target 窗口 → 时间与事件族切分。最终得到 31,949,309（约 3,194.93 万）条固定日历样本，其中 26,330,043（约 2,633.00 万）条属于 cold-family 主视图。</p>
         </div>
 
         <div class="pipeline" aria-label="原始记录到训练样本的处理流程">
@@ -356,9 +356,9 @@
           <table>
             <thead><tr><th>协议</th><th>历史输入</th><th>预测目标</th><th>样本量</th><th>研究用途</th></tr></thead>
             <tbody>
-              <tr><td><b>A-H</b></td><td>过去 24 个日历小时</td><td>未来 1 / 6 / 24 小时</td><td>26,900,567</td><td>Track A 与 P3 主协议</td></tr>
-              <tr><td><b>A-D</b></td><td>过去 10 个 UTC 日</td><td>未来 7 日路径</td><td>2,680,165</td><td>EventConnector 可比实验</td></tr>
-              <tr><td><b>A-S</b></td><td>过去 16 个 UTC 日</td><td>下一日概率与变化</td><td>2,368,577</td><td>SWM history-only 实验</td></tr>
+              <tr><td><b>A-H</b></td><td>过去 24 个日历小时</td><td>未来 1 / 6 / 24 小时</td><td>26,900,567（约 2,690.06 万）</td><td>Track A 与 P3 主协议</td></tr>
+              <tr><td><b>A-D</b></td><td>过去 10 个 UTC 日</td><td>未来 7 日路径</td><td>2,680,165（约 268.02 万）</td><td>EventConnector 可比实验</td></tr>
+              <tr><td><b>A-S</b></td><td>过去 16 个 UTC 日</td><td>下一日概率与变化</td><td>2,368,577（约 236.86 万）</td><td>SWM history-only 实验</td></tr>
             </tbody>
           </table>
         </div>
@@ -386,7 +386,7 @@
         <p>网页展示的是数据基础与样本准备度，不是跨事件关系结果。</p>
       </div>
       <div class="boundary-grid">
-        <article class="yes"><span>CAN SAY</span><h3>数据基础、正式样本与简单基线已经完成</h3><p>多尺度数据通过全量验收；Track A 已生成 31,949,309 条固定日历样本；P2 已生成 43,971 条 lexical/calendar 候选。</p></article>
+        <article class="yes"><span>CAN SAY</span><h3>数据基础、正式样本与简单基线已经完成</h3><p>多尺度数据通过全量验收；Track A 已生成 31,949,309（约 3,194.93 万）条固定日历样本；P2 已生成 43,971（约 4.40 万）条 lexical/calendar 候选。</p></article>
         <article class="no"><span>NOT YET</span><h3>还没有稳定跨事件关系标签</h3><p>P2 候选仍需轨迹信号和人工审核，P3 时间外增量验证尚未开始，更不能直接声称结构因果。</p></article>
       </div>
       <div class="next-step"><span>NEXT</span><p>下一阶段将完成训练型 target-only baseline、EventConnector / SWM 迁移、P2 候选审核与 P3 小规模闭环。</p><a href="#samples">回看样本接口 ↑</a></div>

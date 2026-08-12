@@ -13,8 +13,8 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; color: var(--ink); background: var(--paper); font-size: 16px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+html { overflow-x: hidden; scroll-behavior: smooth; }
+body { margin: 0; overflow-x: hidden; color: var(--ink); background: var(--paper); font-size: 16px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
 a { color: inherit; text-decoration: none; }
 button { color: inherit; font: inherit; }
 code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
@@ -59,6 +59,7 @@ code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 
 .text-link:hover { color: var(--lime); }
 .hero-facts { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 55px; color: rgba(255,255,255,.68); font: 14px ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; }
 .hero-facts b { display: block; margin-bottom: 5px; color: #fff; font: 650 23px Inter, sans-serif; letter-spacing: -.03em; }
+.hero-facts b small { display: block; margin-top: 5px; color: var(--lime); font: 700 13px Inter, sans-serif; letter-spacing: 0; }
 .status-panel { padding: 28px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.055); box-shadow: 0 30px 90px rgba(0,0,0,.2); backdrop-filter: blur(12px); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.12); color: var(--lime); font-size: 14px; font-weight: 850; letter-spacing: .14em; }
 .panel-head b { padding: 5px 8px; color: #123022; background: var(--lime); border-radius: 99px; font-size: 13px; }
@@ -158,7 +159,7 @@ td b { color: var(--green); }
 .card-head h3 { margin: 8px 0 0; font: 500 21px Georgia, serif; }
 .card-head > b { color: var(--green); font: 650 28px Inter, sans-serif; }
 .quantile-chart, .compact-chart { margin-top: 27px; }
-.quantile-row { display: grid; grid-template-columns: 42px 1fr 72px; gap: 11px; align-items: center; margin: 13px 0; font-size: 14px; }
+.quantile-row { display: grid; grid-template-columns: 42px 1fr minmax(145px, auto); gap: 11px; align-items: center; margin: 13px 0; font-size: 14px; }
 .quantile-row span:first-child { color: var(--muted); font: 700 14px ui-monospace, monospace; }
 .bar-track { height: 10px; overflow: hidden; background: rgba(20,36,29,.08); }
 .bar-track i { display: block; height: 100%; min-width: 2px; background: linear-gradient(90deg, var(--green), #38a57e); }
@@ -181,6 +182,7 @@ td b { color: var(--green); }
 .case-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 18px 0; background: rgba(255,255,255,.1); }
 .case-stats span { padding: 12px; background: #14231d; color: rgba(255,255,255,.68); font-size: 13px; }
 .case-stats b { display: block; margin-bottom: 5px; color: #fff; font-size: 14px; }
+.case-stats em { display: block; min-height: 18px; margin-bottom: 4px; color: var(--lime); font-size: 13px; font-style: normal; font-weight: 750; }
 .sparkline { display: block; width: 100%; height: auto; aspect-ratio: 640 / 210; background: rgba(0,0,0,.12); }
 .sparkline .grid { stroke: rgba(255,255,255,.09); stroke-width: 1; }
 .sparkline .axis, .sparkline .tick-mark { stroke: rgba(255,255,255,.24); stroke-width: 1; }
@@ -315,6 +317,7 @@ td b { color: var(--green); }
 .pilot-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
 .pilot-metric { padding: 18px; border: 1px solid var(--line); background: rgba(255,255,255,.3); }
 .pilot-metric b { display: block; margin-bottom: 6px; font-size: 24px; letter-spacing: -.04em; }
+.pilot-metric small { display: block; margin: -1px 0 8px; color: var(--green); font-size: 13px; font-weight: 750; }
 .pilot-metric span { color: var(--muted); font-size: 14px; }
 .sample-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
 .sample-card { min-width: 0; overflow: hidden; background: #13231c; box-shadow: var(--shadow); }
